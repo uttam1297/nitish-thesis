@@ -4,8 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from "react";
 
@@ -30,6 +32,14 @@ import type {
   ResponseMethod,
   Step,
 } from "@/domain/interview/types";
+import {
+  draftStorage as defaultDraftStorage,
+  type DraftStorage,
+} from "@/lib/persistence/draft-storage";
+import {
+  interviewRepository as defaultInterviewRepository,
+  type InterviewRepository,
+} from "@/lib/persistence/interview-repository";
 
 interface InterviewContextValue {
   questionnaire: Questionnaire;
@@ -52,6 +62,10 @@ interface InterviewContextValue {
   goBack: () => void;
   goToStep: (stepId: string, fromReview?: boolean) => void;
   submit: () => void;
+  /** True once, right after mount, when a resumable draft was found. */
+  hasResumableDraft: boolean;
+  resumeDraft: () => void;
+  startOver: () => void;
 }
 
 const InterviewContext = createContext<InterviewContextValue | null>(null);
@@ -59,15 +73,23 @@ const InterviewContext = createContext<InterviewContextValue | null>(null);
 interface InterviewProviderProps {
   children: ReactNode;
   questionnaire?: Questionnaire;
+  draftStorage?: DraftStorage;
+  interviewRepository?: InterviewRepository;
+  /** Milliseconds to wait after a change before writing the draft. */
+  autosaveDelayMs?: number;
 }
 
 /**
- * Phase 1 state lives only in React memory. Refreshing or closing the tab
- * intentionally clears every answer.
+ * Owns interview state and layers local autosave/resume and submission on
+ * top of the pure reducer. Swapping `draftStorage`/`interviewRepository`
+ * (Phase 3) does not require any change to the reducer or screens.
  */
 export function InterviewProvider({
   children,
   questionnaire = defaultQuestionnaire,
+  draftStorage = defaultDraftStorage,
+  interviewRepository = defaultInterviewRepository,
+  autosaveDelayMs = 400,
 }: InterviewProviderProps) {
   const [state, dispatch] = useReducer(
     (current: InterviewState, action: Parameters<typeof interviewReducer>[1]) =>
@@ -75,6 +97,50 @@ export function InterviewProvider({
     questionnaire,
     createInitialState
   );
+
+  // Read once at mount time (not in an effect) so there is a single source
+  // of truth for the pending draft, rather than syncing it into its own
+  // piece of state. A stale-version draft is discarded immediately.
+  const [pendingDraft] = useState<InterviewState | null>(() => {
+    const draft = draftStorage.load();
+    if (!draft) return null;
+    if (draft.questionnaireVersion !== questionnaire.version) {
+      draftStorage.clear();
+      return null;
+    }
+    return draft.state;
+  });
+  const [draftDismissed, setDraftDismissed] = useState(false);
+  const hasResumableDraft = pendingDraft !== null && !draftDismissed;
+
+  // Autosave: skip until the participant has moved past the welcome screen,
+  // and stop once submitted, so a finished interview has nothing left to resume.
+  useEffect(() => {
+    if (state.currentStepId === "welcome") return;
+    if (state.status === "submitted") {
+      draftStorage.clear();
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      draftStorage.save({
+        questionnaireVersion: questionnaire.version,
+        state,
+        savedAt: new Date().toISOString(),
+      });
+    }, autosaveDelayMs);
+    return () => window.clearTimeout(timer);
+  }, [state, questionnaire.version, draftStorage, autosaveDelayMs]);
+
+  const resumeDraft = useCallback(() => {
+    if (!pendingDraft) return;
+    dispatch({ type: "restore", state: pendingDraft });
+    setDraftDismissed(true);
+  }, [pendingDraft]);
+
+  const startOver = useCallback(() => {
+    draftStorage.clear();
+    setDraftDismissed(true);
+  }, [draftStorage]);
 
   const timeline = useMemo(
     () => buildTimeline(questionnaire, state.responses),
@@ -129,7 +195,18 @@ export function InterviewProvider({
       goBack: () => dispatch({ type: "back" }),
       goToStep: (stepId, fromReview) =>
         dispatch({ type: "go_to_step", stepId, fromReview }),
-      submit: () => dispatch({ type: "submit" }),
+      submit: () => {
+        const submittedAt = new Date().toISOString();
+        dispatch({ type: "submit" });
+        void interviewRepository.submit({
+          questionnaireVersion: questionnaire.version,
+          state: { ...state, status: "submitted", submittedAt },
+          submittedAt,
+        });
+      },
+      hasResumableDraft,
+      resumeDraft,
+      startOver,
     }),
     [
       questionnaire,
@@ -141,6 +218,10 @@ export function InterviewProvider({
       outstandingRequired,
       answer,
       skip,
+      hasResumableDraft,
+      resumeDraft,
+      startOver,
+      interviewRepository,
     ]
   );
 

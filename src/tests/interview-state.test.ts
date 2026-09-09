@@ -57,5 +57,21 @@ describe("in-memory Phase 1 state", () => {
     const state = reduce(createInitialState(questionnaire), { type: "submit" });
     expect(state.status).toBe("submitted");
     expect(state.currentStepId).toBe("complete");
+    expect(state.submittedAt).not.toBeNull();
+  });
+
+  it("restores a previously saved state verbatim, for resuming a draft", () => {
+    const saved = reduce(createInitialState(questionnaire), {
+      type: "answer",
+      questionId: "q2",
+      value: { kind: "text", text: "Retail" },
+      method: "typed",
+    });
+
+    const restored = reduce(createInitialState(questionnaire), {
+      type: "restore",
+      state: saved,
+    });
+    expect(restored).toEqual(saved);
   });
 });

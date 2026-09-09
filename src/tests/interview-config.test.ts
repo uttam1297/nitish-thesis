@@ -66,4 +66,29 @@ describe("questionnaire configuration", () => {
       })
     ).toThrow(/Duplicate question id/);
   });
+
+  it("rejects a conditional rule referencing an unknown question", () => {
+    const [first, ...rest] = questionnaire.questions;
+    expect(() =>
+      questionnaireSchema.parse({
+        ...questionnaire,
+        questions: [
+          {
+            ...first,
+            visibleWhen: [
+              { questionId: "does-not-exist", operator: "answered" },
+            ],
+          },
+          ...rest,
+        ],
+      })
+    ).toThrow(/unknown question/);
+  });
+
+  it("applies the real conditional rule that adapts Q7 for engineering-only respondents", () => {
+    const q7 = questionnaire.questions.find((question) => question.id === "q7");
+    expect(q7?.visibleWhen).toEqual([
+      { questionId: "q1", operator: "notEquals", value: "engineering" },
+    ]);
+  });
 });

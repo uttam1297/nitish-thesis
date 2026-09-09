@@ -50,4 +50,26 @@ describe("Phase 1 interview flow", () => {
     expect(unansweredRequiredQuestions(questionnaire, {})).toHaveLength(1);
     expect(unansweredRequiredQuestions(questionnaire, firstAnswer)).toEqual([]);
   });
+
+  it("removes a conditionally hidden question from the timeline and progress total", () => {
+    const engineeringOnly: ResponseMap = {
+      q1: {
+        questionId: "q1",
+        value: { kind: "choices", values: ["engineering"] },
+        method: "selected",
+        skipped: false,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    };
+
+    const ids = buildTimeline(questionnaire, engineeringOnly).map(
+      (step) => step.id
+    );
+    expect(ids).not.toContain("q7");
+    expect(ids.filter((id) => /^q\d+$/.test(id))).toHaveLength(17);
+
+    expect(calculateProgress(questionnaire, engineeringOnly, "q6").total).toBe(
+      17
+    );
+  });
 });

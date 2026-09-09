@@ -48,6 +48,20 @@ const selectionValidationSchema = z
     { message: "maxSelections must be greater than or equal to minSelections." }
   );
 
+const conditionRuleSchema = z.object({
+  questionId: z.string().min(1),
+  operator: z.enum([
+    "equals",
+    "notEquals",
+    "includes",
+    "excludes",
+    "gte",
+    "lte",
+    "answered",
+  ]),
+  value: z.union([z.string(), z.number()]).optional(),
+});
+
 const baseQuestionSchema = z.object({
   id: z.string().min(1),
   construct: z.string().min(1),
@@ -57,6 +71,7 @@ const baseQuestionSchema = z.object({
   description: z.string().min(1).optional(),
   required: z.boolean(),
   researchMetadata: researchMetadataSchema,
+  visibleWhen: z.array(conditionRuleSchema).min(1).optional(),
 });
 
 export const interviewQuestionSchema = z.discriminatedUnion("responseType", [
@@ -166,5 +181,14 @@ export const questionnaireSchema = z
           path: ["questions", index, "construct"],
         });
       }
+      question.visibleWhen?.forEach((rule, ruleIndex) => {
+        if (!questionIds.has(rule.questionId)) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Question "${question.id}" has a conditional rule referencing unknown question "${rule.questionId}".`,
+            path: ["questions", index, "visibleWhen", ruleIndex, "questionId"],
+          });
+        }
+      });
     });
   });

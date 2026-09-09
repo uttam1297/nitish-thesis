@@ -39,6 +39,25 @@ export interface SelectionValidation {
   maxSelections?: number;
 }
 
+/**
+ * A single condition evaluated against a previously stored answer.
+ * A question with `visibleWhen` is shown only when every rule is true.
+ */
+export interface ConditionRule {
+  /** The question whose stored answer this rule inspects. */
+  questionId: string;
+  operator:
+    | "equals"
+    | "notEquals"
+    | "includes"
+    | "excludes"
+    | "gte"
+    | "lte"
+    | "answered";
+  /** Comparison value. Unused by the "answered" operator. */
+  value?: string | number;
+}
+
 interface QuestionBase {
   id: string;
   construct: string;
@@ -48,6 +67,8 @@ interface QuestionBase {
   description?: string;
   required: boolean;
   researchMetadata: ResearchMetadata;
+  /** Config-driven conditional visibility. Absent means always visible. */
+  visibleWhen?: ConditionRule[];
 }
 
 export interface SingleSelectQuestion extends QuestionBase {
@@ -215,4 +236,6 @@ export interface InterviewState {
   consent: ConsentState;
   /** Set while the participant is amending one answer from the review screen. */
   returningToReview: boolean;
+  startedAt: string;
+  submittedAt: string | null;
 }

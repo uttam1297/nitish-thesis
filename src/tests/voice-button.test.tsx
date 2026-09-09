@@ -46,4 +46,18 @@ describe("VoiceButton", () => {
     );
     expect(screen.getByRole("status")).toHaveTextContent(/listening/i);
   });
+
+  it("renders nothing when speech recognition is unsupported", () => {
+    const { container } = render(
+      <VoiceButton state="unsupported" onStart={vi.fn()} onStop={vi.fn()} />
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("offers to try again after a voice error", () => {
+    render(<VoiceButton state="error" onStart={vi.fn()} onStop={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: "Try speaking again" })
+    ).toBeEnabled();
+  });
 });

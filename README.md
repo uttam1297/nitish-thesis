@@ -1,8 +1,7 @@
 # Nitish thesis interview prototype
 
-Phase 1 provides a static, accessible prototype for a guided expert research
-interview. It uses the verbatim Q1-Q18 prompts from `question-set.md` and does
-not save or transmit participant input.
+An accessible, configuration-driven prototype of a guided expert research
+interview. It uses the verbatim Q1-Q18 prompts from `question-set.md`.
 
 ## Stack
 
@@ -13,17 +12,27 @@ React Testing Library, and Playwright.
 
 ```text
 UI screens and primitives
-  → in-memory prototype state
-    → validated research configuration
+  → interview engine (reducer + conditional flow)
+    → local autosave / resume / submission repositories
+      → validated research configuration
 ```
 
 Question wording and Q1 options are sourced exclusively from
 `question-set.md`. The duplicated wording of Q10 and Q11 is intentionally
 preserved because it is present in the source file.
 
-Phase 1 has no database, autosave, resume behavior, real speech recognition,
-authentication, conditional routing, or network submission. The voice control
-inserts a clearly identified sample transcript that remains editable.
+Phase 2 adds:
+
+- Real browser speech recognition behind a swappable
+  `VoiceTranscriptionAdapter`, with a graceful typing fallback whenever it is
+  unsupported, denied, or fails.
+- Config-driven conditional question visibility (`visibleWhen` rules).
+- Local autosave and resume via `DraftStorage`, and a simulated submission
+  via `InterviewRepository` — both are the seams Phase 3 will replace with a
+  Supabase-backed implementation, without touching the engine or screens.
+
+There is still no database, authentication, admin dashboard, export, or
+AI analysis — Phase 3 territory.
 
 ## Commands
 
