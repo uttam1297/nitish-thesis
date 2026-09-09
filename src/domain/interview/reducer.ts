@@ -25,7 +25,8 @@ export type InterviewAction =
   | { type: "back" }
   | { type: "go_to_step"; stepId: string; fromReview?: boolean }
   | { type: "go_to_review" }
-  | { type: "submit" };
+  | { type: "submit" }
+  | { type: "restore"; state: InterviewState };
 
 export function createInitialState(
   questionnaire: Questionnaire
@@ -41,10 +42,12 @@ export function createInitialState(
       consentVersion: questionnaire.version,
     },
     returningToReview: false,
+    startedAt: new Date().toISOString(),
+    submittedAt: null,
   };
 }
 
-/** Pure, in-memory state for the Phase 1 prototype. */
+/** Pure state transitions. Persistence is layered on separately. */
 export function interviewReducer(
   state: InterviewState,
   action: InterviewAction,
@@ -132,6 +135,9 @@ export function interviewReducer(
         ...state,
         status: "submitted",
         currentStepId: "complete",
+        submittedAt: new Date().toISOString(),
       };
+    case "restore":
+      return action.state;
   }
 }

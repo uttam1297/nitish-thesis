@@ -1,4 +1,5 @@
 import { isAnswered, isResolved } from "@/domain/interview/answers";
+import { isQuestionVisible } from "@/domain/interview/conditions";
 import type {
   InterviewQuestion,
   Questionnaire,
@@ -15,13 +16,17 @@ export function sectionStepId(sectionId: string): string {
   return `section:${sectionId}`;
 }
 
-/** Questions in configuration order. Phase 1 has no conditional routing. */
+/**
+ * Questions in configuration order, minus any whose `visibleWhen` rules do
+ * not currently hold. Visibility is config-driven: no screen branches on it.
+ */
 export function visibleQuestions(
   questionnaire: Questionnaire,
-  _responses: ResponseMap
+  responses: ResponseMap
 ): InterviewQuestion[] {
-  void _responses;
-  return questionnaire.questions;
+  return questionnaire.questions.filter((question) =>
+    isQuestionVisible(question.visibleWhen, responses)
+  );
 }
 
 /**

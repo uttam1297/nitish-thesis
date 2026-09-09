@@ -1,14 +1,14 @@
 "use client";
 
-import { Check, Mic, Square } from "lucide-react";
+import { Check, Mic, RotateCcw, Square } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
-import type { MockVoiceState } from "@/features/voice/use-mock-voice";
+import type { VoiceInputState } from "@/features/voice/use-voice-input";
 import { motionTransitions } from "@/lib/motion";
 
 interface VoiceButtonProps {
-  state: MockVoiceState;
+  state: VoiceInputState;
   elapsedSeconds?: number;
   onStart: () => void;
   onStop: () => void;
@@ -31,6 +31,9 @@ export function VoiceButton({
   const reduceMotion = useReducedMotion();
   const listening = state === "listening";
   const completed = state === "completed";
+  const errored = state === "error";
+
+  if (state === "unsupported") return null;
 
   return (
     <div className="flex flex-col items-start gap-1.5">
@@ -66,6 +69,8 @@ export function VoiceButton({
               aria-hidden="true"
               className="relative size-4 text-success"
             />
+          ) : errored ? (
+            <RotateCcw aria-hidden="true" className="relative size-4" />
           ) : (
             <Mic aria-hidden="true" className="relative size-4" />
           )}
@@ -74,14 +79,16 @@ export function VoiceButton({
           ? `Listening… ${formatElapsed(elapsedSeconds)}`
           : completed
             ? "Answer captured"
-            : "Speak answer"}
+            : errored
+              ? "Try speaking again"
+              : "Speak answer"}
       </Button>
 
       <span role="status" aria-live="polite" className="sr-only">
         {listening
           ? "Listening for your answer"
           : completed
-            ? "Mock voice answer captured and ready to edit"
+            ? "Voice answer captured and ready to edit"
             : ""}
       </span>
     </div>

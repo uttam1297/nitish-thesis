@@ -7,11 +7,13 @@ import { VoiceButton } from "@/components/interview/voice-button";
 import type { ResponseFieldProps } from "@/components/interview/response/types";
 import { Label } from "@/components/ui/label";
 import { TextArea } from "@/components/ui/textarea";
-import { useMockVoice } from "@/features/voice/use-mock-voice";
+import { useVoiceInput } from "@/features/voice/use-voice-input";
 
 /**
- * Phase 1 uses a visual-only mock voice state layered over a plain textarea.
- * It never requests microphone access.
+ * Voice is an optional input method layered over a plain textarea, which
+ * remains the source of truth: the participant always sees and can edit
+ * the transcript before continuing, and the question is fully answerable
+ * by typing whether or not voice is available.
  */
 export function VoiceOrTextField({
   question,
@@ -22,7 +24,7 @@ export function VoiceOrTextField({
   invalid,
 }: ResponseFieldProps<"voice_or_text">) {
   const answerId = useId();
-  const voice = useMockVoice({
+  const voice = useVoiceInput({
     onCapture: (text) => {
       onChange(
         {
@@ -34,7 +36,7 @@ export function VoiceOrTextField({
     },
   });
 
-  const showVoice = question.allowVoice;
+  const showVoice = question.allowVoice && voice.state !== "unsupported";
 
   return (
     <div role="group" aria-labelledby={labelledBy} className="grid gap-5">
@@ -81,8 +83,11 @@ export function VoiceOrTextField({
 
       {voice.state === "completed" && (
         <StatusMessage variant="success">
-          Mock transcript added. You can edit the text before continuing.
+          Transcript added. You can edit the text before continuing.
         </StatusMessage>
+      )}
+      {voice.state === "error" && voice.errorMessage && (
+        <StatusMessage variant="warning">{voice.errorMessage}</StatusMessage>
       )}
     </div>
   );

@@ -1,32 +1,40 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-async function continueSection(page: import("@playwright/test").Page) {
+async function disableSpeechRecognition(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "SpeechRecognition", {
+      value: undefined,
+      configurable: true,
+    });
+    Object.defineProperty(window, "webkitSpeechRecognition", {
+      value: undefined,
+      configurable: true,
+    });
+  });
+}
+
+async function continueSection(page: Page) {
   await expect(page.getByText("Next section")).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 }
 
-async function skipQuestions(
-  page: import("@playwright/test").Page,
-  count: number
-) {
+async function skipQuestions(page: Page, count: number) {
   for (let index = 0; index < count; index += 1) {
     await page.getByRole("button", { name: "Skip this question" }).click();
   }
 }
 
-test("participant completes the Phase 1 prototype", async ({ page }) => {
+test("Flow C: voice unavailable falls back to typing and still completes", async ({
+  page,
+}) => {
+  await disableSpeechRecognition(page);
   await page.goto("/");
 
-  await expect(
-    page.getByRole("heading", { name: /adapting b2c customer acquisition/i })
-  ).toBeVisible();
   await page.getByRole("button", { name: /begin the interview/i }).click();
-
-  const consentContinue = page.getByRole("button", { name: "Continue" });
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();
-  await consentContinue.click();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   await continueSection(page);
   await page
@@ -36,14 +44,16 @@ test("participant completes the Phase 1 prototype", async ({ page }) => {
   await skipQuestions(page, 3);
 
   await continueSection(page);
-  await page.getByRole("button", { name: "Speak answer" }).click();
-  await page.getByRole("button", { name: /listening/i }).click();
-  await expect(
-    page.getByRole("button", { name: "Answer captured" })
-  ).toBeVisible();
-  await expect(
-    page.getByRole("textbox", { name: "Your answer" })
-  ).not.toBeEmpty();
+
+  // The first core question offers voice on a supported browser. With
+  // speech recognition disabled, no microphone control renders at all and
+  // the textarea is the only way to answer.
+  await expect(page.getByRole("button", { name: "Speak answer" })).toHaveCount(
+    0
+  );
+  const answer = page.getByRole("textbox", { name: "Your answer" });
+  await expect(answer).toBeVisible();
+  await answer.fill("Typed answer because voice input is unavailable here.");
   await page.getByRole("button", { name: "Continue" }).click();
   await skipQuestions(page, 2);
 
@@ -56,13 +66,8 @@ test("participant completes the Phase 1 prototype", async ({ page }) => {
   await continueSection(page);
   await skipQuestions(page, 4);
 
-  await expect(
-    page.getByRole("heading", { name: "Review your answers" })
-  ).toBeVisible();
   await page.getByRole("button", { name: "Finish prototype" }).click();
-
   await expect(
     page.getByRole("heading", { name: "Thank you for taking part." })
   ).toBeVisible();
-  await expect(page.getByText(/did not store or transmit/i)).toBeVisible();
 });

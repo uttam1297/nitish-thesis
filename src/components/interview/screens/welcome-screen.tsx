@@ -21,6 +21,23 @@ export function WelcomeScreen() {
   return (
     <section className="mx-auto max-w-(--width-reading) py-4 sm:py-8">
       <div className="flex flex-col gap-8">
+        {interview.hasResumableDraft && (
+          <Surface className="grid gap-3 p-5">
+            <h2 className="text-sm font-semibold">{welcome.resume.title}</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {welcome.resume.description}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={interview.resumeDraft}>
+                {welcome.resume.continueLabel}
+              </Button>
+              <Button variant="secondary" onClick={interview.startOver}>
+                {welcome.resume.startOverLabel}
+              </Button>
+            </div>
+          </Surface>
+        )}
+
         <div className="flex flex-col gap-4">
           <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
             {welcome.eyebrow}
@@ -74,12 +91,14 @@ export function WelcomeScreen() {
           </ul>
         </Surface>
 
-        <div>
-          <Button size="large" onClick={interview.goNext}>
-            {welcome.startLabel}
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Button>
-        </div>
+        {!interview.hasResumableDraft && (
+          <div>
+            <Button size="large" onClick={interview.goNext}>
+              {welcome.startLabel}
+              <ArrowRight aria-hidden="true" className="size-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </section>
   );

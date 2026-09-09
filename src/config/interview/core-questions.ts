@@ -153,5 +153,21 @@ export const coreQuestions: InterviewQuestion[] = sourceQuestions.map(
       sourceRef,
       intent: "Verbatim question from question-set.md.",
     },
+    // Q7 asks about the effectiveness of hands-on acquisition channels. A
+    // participant whose Q1 answer is "Engineering / Technology" only has no
+    // direct channel exposure to report on, so the question adapts the path
+    // by stepping aside rather than forcing an answer the construct doesn't
+    // need from them; every other participant still sees it.
+    ...(id === "q7"
+      ? {
+          visibleWhen: [
+            {
+              questionId: "q1",
+              operator: "notEquals" as const,
+              value: "engineering",
+            },
+          ],
+        }
+      : {}),
   })
 );

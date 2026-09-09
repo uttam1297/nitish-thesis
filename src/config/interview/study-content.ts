@@ -16,9 +16,16 @@ export const studyContent = {
     ],
     highlights: [
       "One question at a time",
-      "Type or try the mock voice interaction",
-      "Nothing entered in this prototype is saved or transmitted",
+      "Type your answer, or speak it if your browser supports voice input",
+      "Your progress is saved on this device only, so you can pause and resume",
     ],
+    resume: {
+      title: "You have an unfinished session",
+      description:
+        "We found saved answers from earlier on this device. Continue where you left off, or start over.",
+      continueLabel: "Continue previous session",
+      startOverLabel: "Start over",
+    },
     aims: {
       title: "The study aims to understand",
       points: [
@@ -63,8 +70,9 @@ export const studyContent = {
 
   completion: {
     title: "Thank you for taking part.",
-    description: "You have reached the end of this Phase 1 prototype.",
-    localNotice: "This demonstration did not store or transmit your responses.",
+    description: "You have reached the end of the interview.",
+    localNotice:
+      "Your responses were kept only on this device for this prototype; there is no server behind it yet.",
   },
 
   navigation: {
