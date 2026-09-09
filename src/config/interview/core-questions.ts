@@ -1,0 +1,157 @@
+import type { InterviewQuestion } from "@/domain/interview/types";
+
+interface SourceQuestion {
+  id: `q${number}`;
+  sourceRef: `Q${number}`;
+  section:
+    | "observed-change"
+    | "risk-exposure"
+    | "organisational-response"
+    | "measurement-outlook";
+  construct:
+    | "discovery-behaviour"
+    | "journey-evidence"
+    | "ai-use-and-channels"
+    | "competitive-risk"
+    | "exposure-and-consequences"
+    | "organisational-response"
+    | "prioritisation"
+    | "capability-requirements"
+    | "governance"
+    | "measurement";
+  prompt: string;
+}
+
+/** Every core prompt is copied verbatim from Q5-Q18 in `question-set.md`. */
+const sourceQuestions: SourceQuestion[] = [
+  {
+    id: "q5",
+    sourceRef: "Q5",
+    section: "observed-change",
+    construct: "discovery-behaviour",
+    prompt:
+      "Based on your professional experience, have you observed any changes in how consumers discover, research, compare or evaluate products or services because of AI-based tools or AI-mediated interfaces? Please describe what you have observed.",
+  },
+  {
+    id: "q6",
+    sourceRef: "Q6",
+    section: "observed-change",
+    construct: "journey-evidence",
+    prompt:
+      "Where, if anywhere, do you think AI-mediated discovery changes the traditional customer journey most significantly? Please explain what changes at that stage and why",
+  },
+  {
+    id: "q7",
+    sourceRef: "Q7",
+    section: "observed-change",
+    construct: "ai-use-and-channels",
+    prompt:
+      "How, if at all, does AI-mediated discovery change the role or effectiveness of existing customer-acquisition channels such as search engines, paid advertising, social media, marketplaces or direct website/app discovery?",
+  },
+  {
+    id: "q8",
+    sourceRef: "Q8",
+    section: "risk-exposure",
+    construct: "competitive-risk",
+    prompt:
+      "What competitive disadvantages or strategic risks, if any, could arise for a B2C company that does not adapt its customer-acquisition approach to AI-mediated discovery?",
+  },
+  {
+    id: "q9",
+    sourceRef: "Q9",
+    section: "risk-exposure",
+    construct: "exposure-and-consequences",
+    prompt:
+      "Do you think some types of B2C companies are more exposed to these risks than others? If so, what characteristics make a company more or less vulnerable?",
+  },
+  {
+    id: "q10",
+    sourceRef: "Q10",
+    section: "organisational-response",
+    construct: "organisational-response",
+    prompt:
+      "What actions, experiments or strategic responses have you seen organizations take in response to AI-mediated customer discovery?",
+  },
+  {
+    id: "q11",
+    sourceRef: "Q11",
+    section: "organisational-response",
+    construct: "organisational-response",
+    prompt:
+      "What actions, experiments or strategic responses have you seen organizations take in response to AI-mediated customer discovery?",
+  },
+  {
+    id: "q12",
+    sourceRef: "Q12",
+    section: "organisational-response",
+    construct: "prioritisation",
+    prompt:
+      "What are the main difficulties organizations face when trying to decide how much time, investment or management attention to devote to AI-mediated discovery?",
+  },
+  {
+    id: "q13",
+    sourceRef: "Q13",
+    section: "organisational-response",
+    construct: "capability-requirements",
+    prompt:
+      "What capabilities does a B2C company need in order to respond effectively to AI-mediated customer discovery?",
+  },
+  {
+    id: "q14",
+    sourceRef: "Q14",
+    section: "organisational-response",
+    construct: "governance",
+    prompt:
+      "Who should be responsible for AI-mediated discovery inside a B2C organization, and how should relevant teams work together?",
+  },
+  {
+    id: "q15",
+    sourceRef: "Q15",
+    section: "measurement-outlook",
+    construct: "measurement",
+    prompt:
+      "How should a company determine whether its efforts around AI-mediated discovery are actually working? What should it measure or monitor?",
+  },
+  {
+    id: "q16",
+    sourceRef: "Q16",
+    section: "measurement-outlook",
+    construct: "capability-requirements",
+    prompt:
+      "Imagine a B2C company understands that AI may change customer discovery but has done very little about it so far. What should management do first, and what should happen after that?",
+  },
+  {
+    id: "q17",
+    sourceRef: "Q17",
+    section: "measurement-outlook",
+    construct: "capability-requirements",
+    prompt:
+      "Do you think increasing AI mediation changes the importance of brand strength, direct customer relationships or customer retention for B2C firms? Why or why not?",
+  },
+  {
+    id: "q18",
+    sourceRef: "Q18",
+    section: "measurement-outlook",
+    construct: "capability-requirements",
+    prompt:
+      "What do you think B2C companies are currently most likely to underestimate about AI-mediated customer discovery over the next two to three years?",
+  },
+];
+
+export const coreQuestions: InterviewQuestion[] = sourceQuestions.map(
+  ({ id, sourceRef, section, construct, prompt }) => ({
+    id,
+    section,
+    construct,
+    title: `Question ${sourceRef.slice(1)}`,
+    prompt,
+    required: false,
+    responseType: "voice_or_text",
+    allowVoice: true,
+    allowText: true,
+    researchMetadata: {
+      sourceRef,
+      intent: "Verbatim question from question-set.md.",
+    },
+  })
+);
