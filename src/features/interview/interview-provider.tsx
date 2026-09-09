@@ -41,7 +41,7 @@ import {
   type InterviewRepository,
 } from "@/lib/persistence/interview-repository";
 
-interface InterviewContextValue {
+export interface InterviewContextValue {
   questionnaire: Questionnaire;
   state: InterviewState;
   timeline: Step[];

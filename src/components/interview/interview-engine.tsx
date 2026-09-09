@@ -15,6 +15,7 @@ import {
   InterviewProvider,
   useInterview,
 } from "@/features/interview/interview-provider";
+import { useServerSync } from "@/features/interview/use-server-sync";
 import type { Step } from "@/domain/interview/types";
 
 function StepView({ step }: { step: Step }) {
@@ -38,6 +39,7 @@ function StepView({ step }: { step: Step }) {
 export function InterviewFlow() {
   const interview = useInterview();
   const { currentStep, progress } = interview;
+  const { status: syncStatus, resumeLink } = useServerSync(interview);
 
   const showProgress =
     currentStep.kind === "question" || currentStep.kind === "section";
@@ -52,6 +54,8 @@ export function InterviewFlow() {
           />
         ) : undefined
       }
+      syncStatus={showProgress ? syncStatus : undefined}
+      resumeLink={showProgress ? resumeLink : undefined}
     >
       <AnimatePresence mode="wait" initial={false}>
         <MotionPanel key={currentStep.id} screenKey={currentStep.id}>
