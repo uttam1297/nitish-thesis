@@ -1,11 +1,30 @@
 import type { ReactNode } from "react";
 
+import { ResumeLinkNote } from "@/components/layout/resume-link-note";
+import type { SyncStatus } from "@/features/interview/use-server-sync";
+
+const SYNC_STATUS_LABEL: Record<SyncStatus, string | null> = {
+  idle: null,
+  saving: "Saving…",
+  saved: "Saved",
+  error: "Saved on this device · retrying",
+};
+
 interface InterviewShellProps {
   progress?: ReactNode;
+  syncStatus?: SyncStatus;
+  resumeLink?: string | null;
   children: ReactNode;
 }
 
-export function InterviewShell({ progress, children }: InterviewShellProps) {
+export function InterviewShell({
+  progress,
+  syncStatus,
+  resumeLink,
+  children,
+}: InterviewShellProps) {
+  const syncLabel = syncStatus ? SYNC_STATUS_LABEL[syncStatus] : null;
+
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -20,7 +39,14 @@ export function InterviewShell({ progress, children }: InterviewShellProps) {
           <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
             Research interview
           </p>
-          <p className="text-xs text-muted-foreground">Anonymous · voluntary</p>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            Anonymous · voluntary
+            {syncLabel && (
+              <span role="status" aria-live="polite">
+                · {syncLabel}
+              </span>
+            )}
+          </p>
         </div>
         {progress && <div className="mt-5">{progress}</div>}
       </header>
@@ -34,6 +60,7 @@ export function InterviewShell({ progress, children }: InterviewShellProps) {
 
       <footer className="mx-auto w-full max-w-(--width-interview) px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:px-6 sm:pb-7">
         Your answers are saved in this browser so you can stop and return.
+        {resumeLink && <ResumeLinkNote resumeLink={resumeLink} />}
       </footer>
     </div>
   );
