@@ -6,6 +6,9 @@ import type { ResponseType } from "@/domain/interview/types";
 export const RESPONSE_MODES = ["asynchronous_form", "live_interview"] as const;
 export type ResponseMode = (typeof RESPONSE_MODES)[number];
 
+export const STUDY_STAGES = ["pilot", "main"] as const;
+export type StudyStage = (typeof STUDY_STAGES)[number];
+
 export const SESSION_STATUSES = [
   "started",
   "in_progress",
@@ -54,6 +57,10 @@ export const sessionRecordSchema = z.object({
   lastActivityAt: isoTimestamp,
   completedAt: isoTimestamp.optional(),
   withdrawnAt: isoTimestamp.optional(),
+  /** Idempotency key for creation — see `SESSION_HEADERS` in sheet-schema.ts. */
+  clientRequestId: z.string().optional(),
+  /** Server-derived from `STUDY_STAGE`; never trusted from the browser. */
+  studyStage: z.enum(STUDY_STAGES),
 });
 export type SessionRecord = z.infer<typeof sessionRecordSchema>;
 

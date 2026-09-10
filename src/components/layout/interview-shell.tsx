@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Button } from "@/components/ui/button";
 import { ResumeLinkNote } from "@/components/layout/resume-link-note";
 import type { SyncStatus } from "@/features/interview/use-server-sync";
 
@@ -14,6 +15,7 @@ interface InterviewShellProps {
   progress?: ReactNode;
   syncStatus?: SyncStatus;
   resumeLink?: string | null;
+  otherTabWarning?: boolean;
   children: ReactNode;
 }
 
@@ -21,6 +23,7 @@ export function InterviewShell({
   progress,
   syncStatus,
   resumeLink,
+  otherTabWarning,
   children,
 }: InterviewShellProps) {
   const syncLabel = syncStatus ? SYNC_STATUS_LABEL[syncStatus] : null;
@@ -40,7 +43,7 @@ export function InterviewShell({
             Research interview
           </p>
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            Anonymous · voluntary
+            Confidential · voluntary
             {syncLabel && (
               <span role="status" aria-live="polite">
                 · {syncLabel}
@@ -49,6 +52,22 @@ export function InterviewShell({
           </p>
         </div>
         {progress && <div className="mt-5">{progress}</div>}
+        {otherTabWarning && (
+          <div
+            role="alert"
+            className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-danger/25 bg-danger/5 px-4 py-3 text-sm"
+          >
+            <span>
+              Another open tab has saved newer progress on this interview.
+            </span>
+            <Button
+              variant="secondary"
+              onClick={() => window.location.reload()}
+            >
+              Reload this tab
+            </Button>
+          </div>
+        )}
       </header>
 
       <main

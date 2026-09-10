@@ -11,6 +11,8 @@ import {
   type SyncAnswerPayload,
 } from "@/features/interview/server-sync-client";
 import {
+  clearPendingSessionRequestId,
+  loadOrCreatePendingSessionRequestId,
   loadSessionIdentity,
   saveSessionIdentity,
   type SessionIdentity,
@@ -86,10 +88,17 @@ export function useServerSync(interview: InterviewContextValue) {
           return formatAnswer(question, state.responses[id]);
         };
 
+        // Persisted before the request fires: if the response never
+        // arrives (closed tab, dropped connection), the retry on next
+        // load reuses this id and the server reattaches to the session
+        // the first attempt actually created, instead of duplicating it.
+        const clientRequestId = loadOrCreatePendingSessionRequestId();
+
         const created = await createServerSession({
           questionnaireVersion: questionnaire.version,
           responseMode: "asynchronous_form",
           firstQuestionId: state.currentStepId,
+          clientRequestId,
           profile: {
             role: findAnswerText("q1"),
             industry: findAnswerText("q2"),
@@ -112,6 +121,7 @@ export function useServerSync(interview: InterviewContextValue) {
           syncedUpdatedAt: {},
         };
         saveSessionIdentity(identityRef.current);
+        clearPendingSessionRequestId();
       }
 
       const identity = identityRef.current;

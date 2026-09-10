@@ -38,6 +38,15 @@ export const SESSION_HEADERS = [
   "last_activity_at",
   "completed_at",
   "withdrawn_at",
+  // Idempotency key for session creation: lets a retried "start a new
+  // session" request recognize its own earlier attempt instead of creating
+  // a duplicate participant/session/consent row set. Never a security
+  // credential — see resume_token_hash for that.
+  "client_request_id",
+  // "pilot" | "main" — set server-side from STUDY_STAGE, never trusted
+  // from the browser. Filter this column out of any pilot vs. final
+  // analytical sample; see README "Pilot data handling".
+  "study_stage",
 ] as const;
 
 export const RESPONSE_HEADERS = [

@@ -40,6 +40,39 @@ describe("ParticipantRepository", () => {
 });
 
 describe("SessionRepository", () => {
+  it("defaults to the pilot study stage unless STUDY_STAGE=main", async () => {
+    const original = process.env.STUDY_STAGE;
+    try {
+      delete process.env.STUDY_STAGE;
+      const { participants, sessions } = makeRepositories();
+      const participant = await participants.create({
+        role: "PM",
+        industry: "Retail",
+        experience: "3 years",
+        closenessToDiscovery: "5",
+      });
+      const created = await sessions.create({
+        participantId: participant.participantId,
+        questionnaireVersion: "1.0.0",
+        responseMode: "asynchronous_form",
+        firstQuestionId: "q5",
+      });
+      expect(created.session.record.studyStage).toBe("pilot");
+
+      process.env.STUDY_STAGE = "main";
+      const mainSession = await sessions.create({
+        participantId: participant.participantId,
+        questionnaireVersion: "1.0.0",
+        responseMode: "asynchronous_form",
+        firstQuestionId: "q5",
+      });
+      expect(mainSession.session.record.studyStage).toBe("main");
+    } finally {
+      if (original === undefined) delete process.env.STUDY_STAGE;
+      else process.env.STUDY_STAGE = original;
+    }
+  });
+
   it("creates a session and resolves it by resume token, not by id guessing", async () => {
     const { participants, sessions } = makeRepositories();
     const participant = await participants.create({
@@ -85,6 +118,36 @@ describe("SessionRepository", () => {
     const all = await sessions.listAll();
     expect(all).toHaveLength(1);
     expect(all[0].record.status).toBe("completed");
+  });
+
+  it("finds a session by its creation idempotency key and rotates its token, without creating a duplicate", async () => {
+    const { participants, sessions } = makeRepositories();
+    const participant = await participants.create({
+      role: "PM",
+      industry: "Retail",
+      experience: "3 years",
+      closenessToDiscovery: "5",
+    });
+    const clientRequestId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    const created = await sessions.create({
+      participantId: participant.participantId,
+      questionnaireVersion: "1.0.0",
+      responseMode: "asynchronous_form",
+      firstQuestionId: "q5",
+      clientRequestId,
+    });
+
+    const found = await sessions.findByClientRequestId(clientRequestId);
+    expect(found?.record.sessionId).toBe(created.session.record.sessionId);
+
+    const rotated = await sessions.rotateResumeToken(found!.rowRef);
+    expect(rotated).not.toBe(created.resumeToken);
+    expect(await sessions.findByResumeToken(created.resumeToken)).toBeNull();
+    expect((await sessions.findByResumeToken(rotated))?.record.sessionId).toBe(
+      created.session.record.sessionId
+    );
+
+    expect(await sessions.listAll()).toHaveLength(1);
   });
 
   it("rejects an unknown response mode / status combination via schema", async () => {
@@ -284,6 +347,66 @@ describe("ResponseRepository", () => {
 
     const all = await responses.listBySession(session.record.sessionId);
     expect(all).toHaveLength(2);
+  });
+
+  it("does not duplicate a row when a retry arrives with no rowRef at all", async () => {
+    // Simulates the first save's response never reaching the browser: the
+    // client retries the same answer with no cached rowRef.
+    const { responses, participant, session } = await seedSession();
+    const first = await responses.upsert({
+      participantId: participant.participantId,
+      sessionId: session.record.sessionId,
+      questionId: "q5",
+      questionVersion: "1",
+      construct: "discovery-behaviour",
+      responseType: "voice_or_text",
+      responseValue: JSON.stringify({ kind: "text", text: "Original answer" }),
+    });
+
+    const retried = await responses.upsert({
+      participantId: participant.participantId,
+      sessionId: session.record.sessionId,
+      questionId: "q5",
+      questionVersion: "1",
+      construct: "discovery-behaviour",
+      responseType: "voice_or_text",
+      responseValue: JSON.stringify({ kind: "text", text: "Original answer" }),
+    });
+
+    expect(retried.rowRef).toBe(first.rowRef);
+    const all = await responses.listBySession(session.record.sessionId);
+    expect(all).toHaveLength(1);
+  });
+
+  it("does not duplicate rows in a batch when items arrive with no rowRef", async () => {
+    const { responses, participant, session } = await seedSession();
+    await responses.upsert({
+      participantId: participant.participantId,
+      sessionId: session.record.sessionId,
+      questionId: "q5",
+      questionVersion: "1",
+      construct: "discovery-behaviour",
+      responseType: "voice_or_text",
+      responseValue: JSON.stringify({ kind: "text", text: "First" }),
+    });
+
+    // A batched retry for the same question, again with no rowRef.
+    await responses.upsertMany([
+      {
+        input: {
+          participantId: participant.participantId,
+          sessionId: session.record.sessionId,
+          questionId: "q5",
+          questionVersion: "1",
+          construct: "discovery-behaviour",
+          responseType: "voice_or_text",
+          responseValue: JSON.stringify({ kind: "text", text: "First" }),
+        },
+      },
+    ]);
+
+    const all = await responses.listBySession(session.record.sessionId);
+    expect(all).toHaveLength(1);
   });
 });
 

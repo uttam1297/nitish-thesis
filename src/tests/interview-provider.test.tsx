@@ -6,7 +6,10 @@ import {
   InterviewProvider,
   useInterview,
 } from "@/features/interview/interview-provider";
-import { LocalStorageDraftStorage } from "@/lib/persistence/draft-storage";
+import {
+  DRAFT_STORAGE_KEY,
+  LocalStorageDraftStorage,
+} from "@/lib/persistence/draft-storage";
 import { LocalInterviewRepository } from "@/lib/persistence/interview-repository";
 
 function Harness() {
@@ -15,6 +18,9 @@ function Harness() {
     <div>
       <p data-testid="step">{interview.state.currentStepId}</p>
       <p data-testid="resumable">{String(interview.hasResumableDraft)}</p>
+      <p data-testid="other-tab">
+        {String(interview.otherTabHasNewerProgress)}
+      </p>
       <p data-testid="q2">
         {interview.state.responses.q2?.value?.kind === "text"
           ? interview.state.responses.q2.value.text
@@ -113,5 +119,28 @@ describe("InterviewProvider persistence", () => {
     await user.click(screen.getByText("start-over"));
     expect(screen.getByTestId("resumable")).toHaveTextContent("false");
     expect(storage.load()).toBeNull();
+  });
+
+  it("warns when another tab writes a newer draft for the same key", async () => {
+    // The real draft storage key is used deliberately here: the provider
+    // listens on that exact key, not on whatever custom key a test
+    // instance of DraftStorage was given.
+    render(
+      <InterviewProvider interviewRepository={repository} autosaveDelayMs={0}>
+        <Harness />
+      </InterviewProvider>
+    );
+    expect(screen.getByTestId("other-tab")).toHaveTextContent("false");
+
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: DRAFT_STORAGE_KEY,
+        newValue: JSON.stringify({ questionnaireVersion: "x" }),
+      })
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("other-tab")).toHaveTextContent("true")
+    );
   });
 });

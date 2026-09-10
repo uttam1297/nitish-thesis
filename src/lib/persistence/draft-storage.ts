@@ -21,7 +21,7 @@ export interface DraftStorage {
   clear(): void;
 }
 
-const DRAFT_STORAGE_KEY = "nitish-thesis-interview:draft:v1";
+export const DRAFT_STORAGE_KEY = "nitish-thesis-interview:draft:v1";
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && "localStorage" in window;

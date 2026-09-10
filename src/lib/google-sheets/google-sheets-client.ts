@@ -14,6 +14,15 @@ const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 export class GoogleSheetsClient implements SheetsClient {
   private readonly sheets: sheets_v4.Sheets;
   private readonly spreadsheetId: string;
+  /**
+   * Every repository call runs `ensureSheet` defensively, but the tab and
+   * its header row don't change within a process's lifetime — without
+   * this cache, that would mean a `spreadsheets.get` (and often a header
+   * write) on *every* read and write, doubling or tripling Sheets API
+   * traffic for no reason. See `README.md` "Reduce Google Sheets API
+   * traffic".
+   */
+  private readonly ensuredSheets = new Set<string>();
 
   constructor(credentials: GoogleSheetsCredentials) {
     const auth = new google.auth.GoogleAuth({
@@ -39,7 +48,16 @@ export class GoogleSheetsClient implements SheetsClient {
     }
   }
 
+  /**
+   * Verified once per tab per process, then cached. A tab that exists with
+   * a header row that doesn't match `headers` is a real data-integrity
+   * problem (someone edited the sheet by hand, or an old deploy used a
+   * different schema) — this fails loudly in server logs rather than
+   * guessing which column is which and writing into the wrong one.
+   */
   async ensureSheet(sheetName: string, headers: string[]): Promise<void> {
+    if (this.ensuredSheets.has(sheetName)) return;
+
     await this.run(async () => {
       const spreadsheet = await this.sheets.spreadsheets.get({
         spreadsheetId: this.spreadsheetId,
@@ -55,15 +73,45 @@ export class GoogleSheetsClient implements SheetsClient {
             requests: [{ addSheet: { properties: { title: sheetName } } }],
           },
         });
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.spreadsheetId,
+          range: `${sheetName}!A1`,
+          valueInputOption: "RAW",
+          requestBody: { values: [headers] },
+        });
+        return;
       }
 
-      await this.sheets.spreadsheets.values.update({
+      const existingHeaderRow = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
-        range: `${sheetName}!A1`,
-        valueInputOption: "RAW",
-        requestBody: { values: [headers] },
+        range: `${sheetName}!A1:${columnLetterFor(headers.length)}1`,
       });
+      const existingHeaders = existingHeaderRow.data.values?.[0] ?? [];
+
+      if (existingHeaders.length === 0) {
+        // Sheet exists but was never given headers (e.g. created manually).
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.spreadsheetId,
+          range: `${sheetName}!A1`,
+          valueInputOption: "RAW",
+          requestBody: { values: [headers] },
+        });
+        return;
+      }
+
+      const matches =
+        existingHeaders.length === headers.length &&
+        existingHeaders.every((cell, index) => cell === headers[index]);
+      if (!matches) {
+        throw new Error(
+          `Sheet "${sheetName}" has an unexpected header row (expected ` +
+            `${JSON.stringify(headers)}, found ${JSON.stringify(existingHeaders)}). ` +
+            "Refusing to write until this is corrected, to avoid landing data in the wrong columns."
+        );
+      }
     }, "ensureSheet");
+
+    this.ensuredSheets.add(sheetName);
   }
 
   async readRange(sheetName: string, a1Range: string): Promise<string[][]> {
@@ -133,6 +181,18 @@ export class GoogleSheetsClient implements SheetsClient {
       });
     }, "updateRows");
   }
+}
+
+/** 1 -> "A", 26 -> "Z", 27 -> "AA". Used to size a header-row read exactly. */
+function columnLetterFor(count: number): string {
+  let n = count;
+  let letters = "";
+  while (n > 0) {
+    const remainder = (n - 1) % 26;
+    letters = String.fromCharCode(65 + remainder) + letters;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letters || "A";
 }
 
 /** `"Sheet1!A5:Z5"` -> `5`. Returns null if the range can't be parsed. */

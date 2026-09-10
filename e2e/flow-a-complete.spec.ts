@@ -77,5 +77,5 @@ test("Flow A: welcome -> consent -> profile -> complete -> review -> submit", as
   await expect(
     page.getByRole("heading", { name: "Thank you for taking part." })
   ).toBeVisible();
-  await expect(page.getByText(/kept only on this device/i)).toBeVisible();
+  await expect(page.getByText(/pseudonymous participant code/i)).toBeVisible();
 });

@@ -13,6 +13,13 @@ export const createSessionRequestSchema = z.object({
   questionnaireVersion: z.string().min(1),
   responseMode: z.enum(RESPONSE_MODES).default("asynchronous_form"),
   firstQuestionId: z.string().min(1),
+  /**
+   * Idempotency key the browser generates and persists *before* firing
+   * this request, so a retry (dropped response, double-fire) can be
+   * recognized as the same logical "start a session" attempt rather than
+   * creating a duplicate participant/session/consent row set.
+   */
+  clientRequestId: z.string().uuid(),
   profile: z.object({
     role: z.string().max(500),
     industry: z.string().max(500),

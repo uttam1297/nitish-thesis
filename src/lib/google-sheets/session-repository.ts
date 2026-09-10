@@ -6,6 +6,7 @@ import {
   sessionRecordSchema,
   type ResponseMode,
   type SessionRecord,
+  type StudyStage,
 } from "@/lib/google-sheets/records";
 import {
   generateResumeToken,
@@ -25,6 +26,16 @@ export interface SessionWithRowRef {
 const FIRST_DATA_ROW = 2;
 
 /**
+ * Server-derived, never client-supplied — see `SESSION_HEADERS`'s
+ * `study_stage` comment. Defaults to "pilot" so real data collection must
+ * be an explicit opt-in (`STUDY_STAGE=main`), not something that happens
+ * silently by omission.
+ */
+export function currentStudyStage(): StudyStage {
+  return process.env.STUDY_STAGE === "main" ? "main" : "pilot";
+}
+
+/**
  * One row per interview session. Resume is by hashed token, not by
  * participant id or row number, so a participant can never enumerate or
  * resume someone else's session by guessing.
@@ -37,6 +48,8 @@ export class SessionRepository {
     questionnaireVersion: string;
     responseMode: ResponseMode;
     firstQuestionId: string;
+    /** Idempotency key — see `findByClientRequestId`. */
+    clientRequestId?: string;
   }): Promise<{ session: SessionWithRowRef; resumeToken: string }> {
     await this.client.ensureSheet(SHEET_NAMES.sessions, [...SESSION_HEADERS]);
 
@@ -53,6 +66,8 @@ export class SessionRepository {
       progressPercentage: 0,
       startedAt: now,
       lastActivityAt: now,
+      clientRequestId: input.clientRequestId,
+      studyStage: currentStudyStage(),
     });
 
     const rowRef = await this.client.appendRow(
@@ -79,6 +94,50 @@ export class SessionRepository {
       }
     }
     return null;
+  }
+
+  /**
+   * Idempotency check for session creation: if a browser retries a
+   * "start a new session" request (network blip, double-fire), this finds
+   * the session created by the *first* attempt instead of letting the
+   * caller create a duplicate participant/session/consent row set. Only
+   * used on the (rare) creation path, never on saves.
+   */
+  async findByClientRequestId(
+    clientRequestId: string
+  ): Promise<SessionWithRowRef | null> {
+    const rows = await this.client.readRange(SHEET_NAMES.sessions, "A2:ZZ");
+    for (const [index, row] of rows.entries()) {
+      if (row.every((cell) => cell === "")) continue;
+      const record = rowToSession(row);
+      if (record.clientRequestId === clientRequestId) {
+        return { record, rowRef: index + FIRST_DATA_ROW };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Issues a fresh resume token for an existing session and invalidates
+   * the old one. Used when a creation retry finds the original attempt
+   * already succeeded server-side but the response (and its token) never
+   * reached the browser — the retry needs *a* valid token, and the
+   * original one was never seen by anyone to invalidate unsafely.
+   */
+  async rotateResumeToken(rowRef: number): Promise<string> {
+    const current = await this.getByRowRef(rowRef);
+    if (!current) throw new Error("Session not found.");
+    const resumeToken = generateResumeToken();
+    const updated = sessionRecordSchema.parse({
+      ...current,
+      resumeTokenHash: hashResumeToken(resumeToken),
+    });
+    await this.client.updateRow(
+      SHEET_NAMES.sessions,
+      rowRef,
+      sessionToRow(updated)
+    );
+    return resumeToken;
   }
 
   async getByRowRef(rowRef: number): Promise<SessionRecord | null> {

@@ -54,6 +54,9 @@ export default async function SessionDetailPage({
           <strong>Mode:</strong> {found.record.responseMode}
         </p>
         <p>
+          <strong>Stage:</strong> {found.record.studyStage}
+        </p>
+        <p>
           <strong>Questionnaire version:</strong>{" "}
           {found.record.questionnaireVersion}
         </p>
