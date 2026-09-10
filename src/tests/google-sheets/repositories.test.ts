@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { ConsentRepository } from "@/lib/google-sheets/consent-repository";
-import { InMemorySheetsClient } from "@/lib/google-sheets/in-memory-sheets-client";
 import { ParticipantRepository } from "@/lib/google-sheets/participant-repository";
 import { ResearchMetadataRepository } from "@/lib/google-sheets/research-metadata-repository";
 import { ResponseRepository } from "@/lib/google-sheets/response-repository";
@@ -9,10 +8,14 @@ import { responseRecordSchema } from "@/lib/google-sheets/records";
 import { SessionRepository } from "@/lib/google-sheets/session-repository";
 import { generateResumeToken } from "@/lib/google-sheets/resume-token";
 import { withdrawSession } from "@/lib/google-sheets/withdrawal";
+import { StrictSheetsClient } from "@/tests/stubs/strict-sheets-client";
 import type { SheetsClient } from "@/lib/google-sheets/sheets-client";
 
 function makeRepositories() {
-  const client: SheetsClient = new InMemorySheetsClient();
+  // Not the lenient InMemorySheetsClient: this one throws exactly like the
+  // real Sheets API does when a sheet is read/written before `ensureSheet`
+  // — see its class doc for the production bug this caught.
+  const client: SheetsClient = new StrictSheetsClient();
   return {
     client,
     participants: new ParticipantRepository(client),
@@ -93,6 +96,16 @@ describe("SessionRepository", () => {
 
     const notFound = await sessions.findByResumeToken(generateResumeToken());
     expect(notFound).toBeNull();
+  });
+
+  it("looks up an idempotency key on a brand-new spreadsheet without crashing", async () => {
+    // Regression test: on a fresh spreadsheet, the Sessions tab does not
+    // exist yet. The idempotency check used to read it directly, before
+    // anything had ever called ensureSheet — which is exactly what
+    // production hit (a 503 on every session-creation request).
+    const { sessions } = makeRepositories();
+    const result = await sessions.findByClientRequestId("some-request-id");
+    expect(result).toBeNull();
   });
 
   it("marks completion idempotently, so a retried submit is a no-op", async () => {

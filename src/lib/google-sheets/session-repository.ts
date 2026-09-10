@@ -43,6 +43,17 @@ export function currentStudyStage(): StudyStage {
 export class SessionRepository {
   constructor(private readonly client: SheetsClient) {}
 
+  /**
+   * Every method that touches the Sessions tab calls this first — on a
+   * brand-new spreadsheet (or the first request after `sheets:init` was
+   * skipped) the tab may not exist yet, and reading a range from a
+   * nonexistent tab fails outright. `ensureSheet` is cached after its
+   * first real check per process, so this costs nothing on the hot path.
+   */
+  private async ensure(): Promise<void> {
+    await this.client.ensureSheet(SHEET_NAMES.sessions, [...SESSION_HEADERS]);
+  }
+
   async create(input: {
     participantId: string;
     questionnaireVersion: string;
@@ -51,7 +62,7 @@ export class SessionRepository {
     /** Idempotency key — see `findByClientRequestId`. */
     clientRequestId?: string;
   }): Promise<{ session: SessionWithRowRef; resumeToken: string }> {
-    await this.client.ensureSheet(SHEET_NAMES.sessions, [...SESSION_HEADERS]);
+    await this.ensure();
 
     const resumeToken = generateResumeToken();
     const now = new Date().toISOString();
@@ -83,6 +94,7 @@ export class SessionRepository {
    * on every save — the save path uses the cached `rowRef` instead.
    */
   async findByResumeToken(token: string): Promise<SessionWithRowRef | null> {
+    await this.ensure();
     const targetHash = hashResumeToken(token);
     const rows = await this.client.readRange(SHEET_NAMES.sessions, "A2:ZZ");
 
@@ -106,6 +118,7 @@ export class SessionRepository {
   async findByClientRequestId(
     clientRequestId: string
   ): Promise<SessionWithRowRef | null> {
+    await this.ensure();
     const rows = await this.client.readRange(SHEET_NAMES.sessions, "A2:ZZ");
     for (const [index, row] of rows.entries()) {
       if (row.every((cell) => cell === "")) continue;
@@ -141,6 +154,7 @@ export class SessionRepository {
   }
 
   async getByRowRef(rowRef: number): Promise<SessionRecord | null> {
+    await this.ensure();
     const row = await this.client.readRow(SHEET_NAMES.sessions, rowRef);
     return row.length > 0 && row[0] ? rowToSession(row) : null;
   }
@@ -215,6 +229,7 @@ export class SessionRepository {
 
   /** Full-sheet read: admin overview/list only, not on the participant save path. */
   async listAll(): Promise<SessionWithRowRef[]> {
+    await this.ensure();
     const rows = await this.client.readRange(SHEET_NAMES.sessions, "A2:ZZ");
     return rows
       .map((row, index) => ({ row, rowRef: index + FIRST_DATA_ROW }))
