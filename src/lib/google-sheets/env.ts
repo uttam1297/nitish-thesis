@@ -18,9 +18,26 @@ export interface GoogleSheetsCredentials {
  * newline, so `GOOGLE_PRIVATE_KEY` is usually set with escaped `\n`
  * sequences. Convert those back to real newlines; a key that already has
  * real newlines (e.g. from a local `.env` heredoc) is left untouched.
+ *
+ * Also tolerates the single most common paste mistake: copying the value
+ * straight out of the downloaded JSON key file *including* its
+ * surrounding double quotes. Node's PEM decoder fails on that with an
+ * opaque `ERR_OSSL_UNSUPPORTED` / "DECODER routines::unsupported" error
+ * that gives no hint the cause is a couple of stray quote characters, so
+ * strip them defensively rather than requiring an exact paste format.
  */
-function normalizePrivateKey(raw: string): string {
-  return raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
+export function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  if (key.includes("\\n")) {
+    key = key.replace(/\\n/g, "\n");
+  }
+  return key.trim();
 }
 
 /**
