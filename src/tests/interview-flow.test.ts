@@ -47,8 +47,10 @@ describe("Phase 1 interview flow", () => {
       percent: 6,
       position: 2,
     });
-    expect(unansweredRequiredQuestions(questionnaire, {})).toHaveLength(1);
-    expect(unansweredRequiredQuestions(questionnaire, firstAnswer)).toEqual([]);
+    expect(unansweredRequiredQuestions(questionnaire, {})).toHaveLength(18);
+    expect(
+      unansweredRequiredQuestions(questionnaire, firstAnswer)
+    ).toHaveLength(17);
   });
 
   it("removes a conditionally hidden question from the timeline and progress total", () => {

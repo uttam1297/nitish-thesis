@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { DiscoveryLineArt } from "@/components/illustration/line-art";
 import { Button } from "@/components/ui/button";
 import { ResumeLinkNote } from "@/components/layout/resume-link-note";
 import type { SyncStatus } from "@/features/interview/use-server-sync";
@@ -29,7 +30,16 @@ export function InterviewShell({
   const syncLabel = syncStatus ? SYNC_STATUS_LABEL[syncStatus] : null;
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden">
+      <DiscoveryLineArt
+        aria-hidden="true"
+        className="pointer-events-none fixed -top-16 -left-24 hidden size-[34rem] text-primary/[0.035] lg:block"
+      />
+      <DiscoveryLineArt
+        aria-hidden="true"
+        className="pointer-events-none fixed -right-24 -bottom-16 hidden size-[34rem] rotate-180 text-primary/[0.035] lg:block"
+      />
+
       <a
         href="#interview-content"
         className="sr-only z-50 rounded-md bg-primary px-4 py-3 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -37,7 +47,7 @@ export function InterviewShell({
         Skip to interview content
       </a>
 
-      <header className="mx-auto w-full max-w-(--width-interview) px-4 pt-5 sm:px-6 sm:pt-7">
+      <header className="relative mx-auto w-full max-w-(--width-interview) px-4 pt-5 sm:px-6 sm:pt-7">
         <div className="flex min-h-8 items-center justify-between gap-4">
           <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
             Research interview
@@ -72,12 +82,12 @@ export function InterviewShell({
 
       <main
         id="interview-content"
-        className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 sm:py-12"
+        className="relative flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-8"
       >
         <div className="w-full max-w-(--width-interview)">{children}</div>
       </main>
 
-      <footer className="mx-auto w-full max-w-(--width-interview) px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:px-6 sm:pb-7">
+      <footer className="relative mx-auto w-full max-w-(--width-interview) px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:px-6 sm:pb-7">
         Your answers are saved in this browser so you can stop and return.
         {resumeLink && <ResumeLinkNote resumeLink={resumeLink} />}
       </footer>

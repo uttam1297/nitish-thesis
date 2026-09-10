@@ -67,6 +67,8 @@ export interface SubmitPayload {
 export interface SubmitResult {
   success: true;
   alreadyCompleted: boolean;
+  /** Pseudonymous research code (e.g. "P007"), shown on the thank-you screen. */
+  participantCode: string | null;
 }
 
 async function postJson<TResult>(url: string, body: unknown): Promise<TResult> {

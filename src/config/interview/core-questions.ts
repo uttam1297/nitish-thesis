@@ -145,10 +145,11 @@ export const coreQuestions: InterviewQuestion[] = sourceQuestions.map(
     construct,
     title: `Question ${sourceRef.slice(1)}`,
     prompt,
-    required: false,
+    required: true,
     responseType: "voice_or_text",
     allowVoice: true,
     allowText: true,
+    validation: { minLength: 20 },
     researchMetadata: {
       sourceRef,
       intent: "Verbatim question from question-set.md.",

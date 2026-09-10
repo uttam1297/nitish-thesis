@@ -36,6 +36,7 @@ const RETRY_INTERVAL_MS = 8000;
  */
 export function useServerSync(interview: InterviewContextValue) {
   const [status, setStatus] = useState<SyncStatus>("idle");
+  const [participantCode, setParticipantCode] = useState<string | null>(null);
   const identityRef = useRef<SessionIdentity | null>(null);
   const hasSubmittedRef = useRef(false);
   const inFlightRef = useRef(false);
@@ -194,10 +195,11 @@ export function useServerSync(interview: InterviewContextValue) {
         return;
       }
       try {
-        await submitServerSession({
+        const result = await submitServerSession({
           sessionId: identity.sessionId,
           resumeToken: identity.resumeToken,
         });
+        setParticipantCode(result.participantCode);
       } catch {
         // Safe to leave unresolved: the participant already sees the local
         // completion screen, and the retry loop above keeps syncing content
@@ -215,5 +217,5 @@ export function useServerSync(interview: InterviewContextValue) {
     setResumeLink(`${window.location.origin}/interview/resume?token=${token}`);
   }, [status]);
 
-  return { status, resumeLink };
+  return { status, resumeLink, participantCode };
 }

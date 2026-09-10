@@ -31,13 +31,13 @@ export function ReviewScreen() {
     .filter((group) => group.items.length > 0);
 
   return (
-    <Surface className="mx-auto max-w-(--width-reading) p-5 sm:p-8">
-      <div className="flex flex-col gap-7">
+    <Surface className="mx-auto max-w-(--width-interview) border-none p-5 shadow-none sm:p-8">
+      <div className="mx-auto flex max-w-(--width-reading) flex-col gap-7">
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
             {review.eyebrow}
           </p>
-          <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+          <h1 className="text-xl font-medium tracking-[-0.015em] sm:text-2xl">
             {review.title}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">

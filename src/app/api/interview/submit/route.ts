@@ -29,13 +29,20 @@ export async function POST(request: NextRequest) {
     const { alreadyCompleted } = await repositories.sessions.markCompleted(
       session.id
     );
+    const participant = await repositories.participants.getById(
+      session.participantId
+    );
 
     console.info("[interview] submission completed", {
       sessionId: session.id,
       alreadyCompleted,
     });
 
-    return NextResponse.json({ success: true, alreadyCompleted });
+    return NextResponse.json({
+      success: true,
+      alreadyCompleted,
+      participantCode: participant?.participantCode ?? null,
+    });
   } catch (error) {
     const safe = toSafeApiError(
       error,

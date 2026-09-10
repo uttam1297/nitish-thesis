@@ -1,5 +1,7 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
+
 import { cn } from "@/lib/utils";
 
 interface ScaleInputProps {
@@ -27,6 +29,7 @@ export function ScaleInput({
     { length: max - min + 1 },
     (_, index) => min + index
   );
+  const reduceMotion = useReducedMotion();
 
   return (
     <div>
@@ -35,11 +38,19 @@ export function ScaleInput({
         aria-labelledby={labelledBy}
         className="flex items-center justify-between gap-2"
       >
-        {points.map((point) => (
-          <label
+        {points.map((point, index) => (
+          <motion.label
             key={point}
+            tabIndex={-1}
+            initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{
+              duration: 0.16,
+              delay: reduceMotion ? 0 : index * 0.03,
+            }}
+            whileTap={reduceMotion ? undefined : { scale: 0.92 }}
             className={cn(
-              "relative flex size-11 cursor-pointer items-center justify-center rounded-full border bg-surface text-sm font-semibold transition-colors duration-(--duration-fast) hover:bg-surface-subtle focus-within:border-ring focus-within:outline-3 focus-within:outline-ring/35",
+              "relative flex size-11 cursor-pointer items-center justify-center rounded-full border bg-surface text-sm font-medium transition-colors duration-(--duration-fast) hover:bg-surface-subtle focus-within:border-ring focus-within:outline-3 focus-within:outline-ring/35",
               value === point &&
                 "border-primary bg-primary text-primary-foreground"
             )}
@@ -53,7 +64,7 @@ export function ScaleInput({
               onChange={() => onValueChange?.(point)}
             />
             {point}
-          </label>
+          </motion.label>
         ))}
       </div>
       {(minLabel || maxLabel) && (

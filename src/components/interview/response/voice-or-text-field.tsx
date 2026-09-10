@@ -39,37 +39,31 @@ export function VoiceOrTextField({
   const showVoice = question.allowVoice && voice.state !== "unsupported";
 
   return (
-    <div role="group" aria-labelledby={labelledBy} className="grid gap-5">
+    <div role="group" aria-labelledby={labelledBy} className="grid gap-3">
       {showVoice && (
-        <div className="grid gap-2">
-          <VoiceButton
-            state={voice.state}
-            elapsedSeconds={voice.elapsedSeconds}
-            onStart={voice.start}
-            onStop={voice.stop}
-          />
-          <p className="text-xs text-muted-foreground">
-            Voice uses your browser&rsquo;s built-in speech recognition, which
-            may process audio via your browser or device vendor rather than this
-            application. Nothing is stored until you see and can edit the text
-            below.
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <VoiceButton
+              state={voice.state}
+              elapsedSeconds={voice.elapsedSeconds}
+              onStart={voice.start}
+              onStop={voice.stop}
+            />
+            <span className="text-xs text-muted-foreground">or type below</span>
+          </div>
+          <p className="text-xs text-muted-foreground/80">
+            Uses your browser&rsquo;s speech recognition. Nothing is saved until
+            you review the text.
           </p>
         </div>
       )}
 
-      {showVoice && (
-        <div className="flex items-center gap-3" aria-hidden="true">
-          <span className="h-px flex-1 bg-border" />
-          <span className="text-xs text-muted-foreground">or type</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
-      )}
-
-      <div className="grid gap-2">
+      <div className="grid gap-1.5">
         <Label htmlFor={answerId}>Your answer</Label>
         <TextArea
           id={answerId}
           value={value.text}
+          className="min-h-28"
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
           placeholder={question.placeholder}
@@ -82,9 +76,6 @@ export function VoiceOrTextField({
             )
           }
         />
-        <p className="text-xs text-muted-foreground">
-          You can edit anything here before continuing.
-        </p>
       </div>
 
       {voice.state === "completed" && (

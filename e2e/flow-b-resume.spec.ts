@@ -16,8 +16,7 @@ test("Flow B: start -> answer -> refresh -> resume", async ({ page }) => {
     .check();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  const industryField = page.getByRole("textbox", { name: "Your answer" });
-  await industryField.fill("Retail");
+  await page.getByRole("radio", { name: "Retail / E-commerce" }).check();
 
   // Wait for the debounced autosave to persist this exact answer (not just
   // any earlier snapshot) before reloading.
@@ -25,7 +24,7 @@ test("Flow B: start -> answer -> refresh -> resume", async ({ page }) => {
     const raw = window.localStorage.getItem("nitish-thesis-interview:draft:v1");
     if (!raw) return false;
     const draft = JSON.parse(raw);
-    return draft.state.responses.q2?.value?.text === "Retail";
+    return draft.state.responses.q2?.value?.value === "retail-ecommerce";
   });
 
   await page.reload();
@@ -35,9 +34,9 @@ test("Flow B: start -> answer -> refresh -> resume", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("button", { name: "Continue previous session" }).click();
 
-  await expect(page.getByRole("textbox", { name: "Your answer" })).toHaveValue(
-    "Retail"
-  );
+  await expect(
+    page.getByRole("radio", { name: "Retail / E-commerce" })
+  ).toBeChecked();
 
   await page.getByRole("button", { name: "Back" }).click();
   await expect(

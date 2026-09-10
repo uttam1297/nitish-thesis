@@ -22,7 +22,7 @@ export function SectionTransitionScreen({
     index > 0 ? interview.questionnaire.sections[index - 1] : null;
 
   return (
-    <Surface className="mx-auto max-w-lg p-6 text-center sm:p-10">
+    <Surface className="mx-auto max-w-lg border-none p-6 text-center shadow-none sm:p-10">
       <div className="flex flex-col items-center gap-7">
         <div className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
           <CheckCircle2 aria-hidden="true" className="size-5" />
@@ -36,7 +36,7 @@ export function SectionTransitionScreen({
           <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
             Next section
           </p>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance">
+          <h1 className="text-2xl font-medium tracking-[-0.02em] text-balance sm:text-3xl">
             {section.title}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
