@@ -7,7 +7,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import Image from "next/image";
 
+import htwLogo from "@/assets/htw-logo.png";
 import { DiscoveryLineArt } from "@/components/illustration/line-art";
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
@@ -27,9 +29,25 @@ export function WelcomeScreen() {
       <div className="relative mx-auto max-w-(--width-reading) overflow-hidden px-2 pt-6 sm:pt-8">
         <DiscoveryLineArt className="pointer-events-none absolute -top-6 -right-10 size-48 text-primary/10 sm:size-64" />
         <div className="relative flex flex-col gap-3">
-          <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-            {welcome.eyebrow}
-          </p>
+          <div className="flex items-start justify-between gap-6">
+            <p className="pt-1 text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+              {welcome.eyebrow}
+            </p>
+            <motion.div
+              initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={motionTransitions.emphasized}
+              className="relative z-10 -mt-2 w-24 shrink-0 sm:w-28"
+            >
+              <Image
+                src={htwLogo}
+                alt="HTW Berlin University of Applied Sciences"
+                priority
+                sizes="(min-width: 640px) 112px, 96px"
+                className="h-auto w-full"
+              />
+            </motion.div>
+          </div>
           <h1 className="max-w-md text-2xl leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-3xl">
             {welcome.title}
           </h1>

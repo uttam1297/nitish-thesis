@@ -2,6 +2,7 @@
 
 import { AnimatePresence } from "motion/react";
 
+import { CompletionBackdrop } from "@/components/illustration/completion-backdrop";
 import { ProgressIndicator } from "@/components/interview/progress-indicator";
 import { CompletionScreen } from "@/components/interview/screens/completion-screen";
 import { ConsentScreen } from "@/components/interview/screens/consent-screen";
@@ -53,6 +54,10 @@ export function InterviewFlow() {
 
   const showProgress =
     currentStep.kind === "question" || currentStep.kind === "section";
+  const showJourneyBackdrop =
+    showProgress ||
+    currentStep.kind === "review" ||
+    currentStep.kind === "complete";
 
   return (
     <InterviewShell
@@ -67,6 +72,14 @@ export function InterviewFlow() {
       syncStatus={showProgress ? syncStatus : undefined}
       resumeLink={showProgress ? resumeLink : undefined}
       otherTabWarning={interview.otherTabHasNewerProgress}
+      background={
+        showJourneyBackdrop ? (
+          <CompletionBackdrop
+            progress={progress.percent}
+            isComplete={currentStep.kind === "complete"}
+          />
+        ) : undefined
+      }
     >
       <AnimatePresence mode="wait" initial={false}>
         <MotionPanel key={currentStep.id} screenKey={currentStep.id}>
