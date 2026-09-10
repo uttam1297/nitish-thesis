@@ -1,18 +1,17 @@
 /**
- * Client-side cache of Phase 3 server identity: which session this browser
- * is attached to, its resume token, and the Sheets row number already
- * allocated to each answered question. Kept separate from the Phase 2
+ * Client-side cache of the server session identity: which session this
+ * browser is attached to and its resume token. Kept separate from the
  * `InterviewDraft` (interview domain state) — this is sync-protocol
  * metadata, not a participant answer.
  */
 export interface SessionIdentity {
   participantId: string;
   sessionId: string;
-  sessionRowRef: number;
   resumeToken: string;
-  /** questionId -> the Sheets row its response was last saved to. */
-  rowRefs: Record<string, number>;
-  /** questionId -> the response's `updatedAt` last successfully synced. */
+  /**
+   * questionId -> the response's `updatedAt` last successfully synced —
+   * only the changed answers need resending on the next sync.
+   */
   syncedUpdatedAt: Record<string, string>;
 }
 

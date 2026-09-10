@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 
 import { getQuestion } from "@/config/interview";
 import { Surface } from "@/components/ui/surface";
-import { createRepositories } from "@/lib/google-sheets/repositories";
+import { createRepositories } from "@/lib/supabase/repositories";
+import type { ResponseRecord } from "@/lib/supabase/records";
 import { WithdrawButton } from "@/app/admin/sessions/[sessionId]/withdraw-button";
 
 interface SessionDetailPageProps {
@@ -17,20 +18,17 @@ export default async function SessionDetailPage({
   const { sessionId } = await params;
   const repositories = createRepositories();
 
-  const found = await repositories.sessions.findBySessionId(sessionId);
-  if (!found) notFound();
+  const session = await repositories.sessions.getById(sessionId);
+  if (!session) notFound();
 
-  const [participants, responses, consent] = await Promise.all([
-    repositories.participants.listAll(),
+  const [participant, responses, consent] = await Promise.all([
+    repositories.participants.getById(session.participantId),
     repositories.responses.listBySession(sessionId),
     repositories.consent.listBySession(sessionId),
   ]);
-  const participant = participants.find(
-    (p) => p.participantId === found.record.participantId
-  );
   const latestConsent = consent.at(-1);
 
-  const byConstruct = new Map<string, typeof responses>();
+  const byConstruct = new Map<string, ResponseRecord[]>();
   for (const response of responses) {
     const bucket = byConstruct.get(response.construct) ?? [];
     bucket.push(response);
@@ -40,25 +38,26 @@ export default async function SessionDetailPage({
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Session {sessionId}</h1>
-        {found.record.status !== "withdrawn" && (
+        <h1 className="text-xl font-semibold">
+          {participant?.participantCode ?? "Session"} · {sessionId.slice(0, 8)}
+        </h1>
+        {session.status !== "withdrawn" && (
           <WithdrawButton sessionId={sessionId} />
         )}
       </div>
 
       <Surface className="mb-6 grid gap-2 p-4 text-sm">
         <p>
-          <strong>Status:</strong> {found.record.status}
+          <strong>Status:</strong> {session.status}
         </p>
         <p>
-          <strong>Mode:</strong> {found.record.responseMode}
+          <strong>Mode:</strong> {session.responseMode}
         </p>
         <p>
-          <strong>Stage:</strong> {found.record.studyStage}
+          <strong>Stage:</strong> {session.studyStage}
         </p>
         <p>
-          <strong>Questionnaire version:</strong>{" "}
-          {found.record.questionnaireVersion}
+          <strong>Questionnaire version:</strong> {session.questionnaireVersion}
         </p>
         <p>
           <strong>Role / industry / experience:</strong> {participant?.role} /{" "}
@@ -72,12 +71,12 @@ export default async function SessionDetailPage({
         </p>
         <p>
           <strong>Started:</strong>{" "}
-          {new Date(found.record.startedAt).toLocaleString()}
+          {new Date(session.startedAt).toLocaleString()}
         </p>
-        {found.record.completedAt && (
+        {session.completedAt && (
           <p>
             <strong>Completed:</strong>{" "}
-            {new Date(found.record.completedAt).toLocaleString()}
+            {new Date(session.completedAt).toLocaleString()}
           </p>
         )}
       </Surface>
@@ -89,7 +88,7 @@ export default async function SessionDetailPage({
             <ul className="grid gap-3">
               {items.map((item) => (
                 <li
-                  key={item.responseId}
+                  key={item.id}
                   className="border-t pt-3 first:border-0 first:pt-0"
                 >
                   <p className="text-xs text-muted-foreground">
@@ -111,30 +110,29 @@ export default async function SessionDetailPage({
   );
 }
 
-function formatStoredValue(json: string): string {
-  if (json === "[WITHDRAWN]") return "[withdrawn]";
-  try {
-    const value = JSON.parse(json) as
-      | { kind: "text"; text: string }
-      | { kind: "choice"; value: string }
-      | { kind: "choices"; values: string[] }
-      | { kind: "scale"; value: number }
-      | { kind: "ranking"; order: string[] };
-    switch (value.kind) {
-      case "text":
-        return value.text;
-      case "choice":
-        return value.value;
-      case "choices":
-        return value.values.join(", ");
-      case "scale":
-        return String(value.value);
-      case "ranking":
-        return value.order.join(" > ");
-      default:
-        return json;
-    }
-  } catch {
-    return json;
+function formatStoredValue(value: unknown): string {
+  if (value === "[WITHDRAWN]") return "[withdrawn]";
+  if (!value || typeof value !== "object") return String(value ?? "");
+
+  const answer = value as
+    | { kind: "text"; text: string }
+    | { kind: "choice"; value: string }
+    | { kind: "choices"; values: string[] }
+    | { kind: "scale"; value: number }
+    | { kind: "ranking"; order: string[] };
+
+  switch (answer.kind) {
+    case "text":
+      return answer.text;
+    case "choice":
+      return answer.value;
+    case "choices":
+      return answer.values.join(", ");
+    case "scale":
+      return String(answer.value);
+    case "ranking":
+      return answer.order.join(" > ");
+    default:
+      return JSON.stringify(value);
   }
 }

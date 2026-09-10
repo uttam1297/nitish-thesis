@@ -3,7 +3,7 @@ export const studyTitle =
 
 /**
  * Bump when the consent statements in `study-content.ts` change materially.
- * Kept outside `src/lib/google-sheets/` (which is server-only) so both the
+ * Kept outside `src/lib/supabase/` (which is server-only) so both the
  * server repositories and client-side forms can reference it safely.
  */
 export const CONSENT_VERSION = "1.0.0";

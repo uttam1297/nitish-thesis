@@ -2,9 +2,13 @@
 
 /**
  * Thin fetch wrappers for `/api/interview/*`. Deliberately has no
- * dependency on anything under `src/lib/google-sheets/` — those modules
- * are `server-only` and must never end up in the client bundle. Types here
+ * dependency on anything under `src/lib/supabase/` — those modules are
+ * `server-only` and must never end up in the client bundle. Types here
  * are a minimal, independent mirror of the API's JSON shape.
+ *
+ * No row-ref tracking here (unlike the earlier Google Sheets backend):
+ * Postgres's own `UNIQUE(session_id, question_id)` + upsert means the
+ * server always knows which row a question's answer belongs to.
  */
 
 export interface CreateSessionPayload {
@@ -30,7 +34,6 @@ export interface CreateSessionPayload {
 export interface CreateSessionResult {
   participantId: string;
   sessionId: string;
-  sessionRowRef: number;
   resumeToken: string;
   startedAt: string;
 }
@@ -42,12 +45,10 @@ export interface SyncAnswerPayload {
   responseType: string;
   responseValue: string;
   optionalElaboration?: string;
-  rowRef?: number;
 }
 
 export interface SyncPayload {
   sessionId: string;
-  sessionRowRef: number;
   resumeToken: string;
   currentQuestionId: string;
   progressPercentage: number;
@@ -56,12 +57,10 @@ export interface SyncPayload {
 
 export interface SyncResult {
   savedAt: string;
-  rowRefs: { questionId: string; rowRef: number }[];
 }
 
 export interface SubmitPayload {
   sessionId: string;
-  sessionRowRef: number;
   resumeToken: string;
 }
 
@@ -111,7 +110,6 @@ export interface ResumeResult {
     responseMode: string;
     questionnaireVersion: string;
   };
-  sessionRowRef: number;
   responses: {
     questionId: string;
     construct: string;

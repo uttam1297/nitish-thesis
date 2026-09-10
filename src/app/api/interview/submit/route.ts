@@ -1,16 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { toSafeApiError } from "@/lib/google-sheets/api-errors";
-import { submitRequestSchema } from "@/lib/google-sheets/api-schemas";
-import { createRepositories } from "@/lib/google-sheets/repositories";
-import { verifySessionOwnership } from "@/lib/google-sheets/session-ownership";
+import { toSafeApiError } from "@/lib/supabase/api-errors";
+import { submitRequestSchema } from "@/lib/supabase/api-schemas";
+import { createRepositories } from "@/lib/supabase/repositories";
+import { verifySessionOwnership } from "@/lib/supabase/session-ownership";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Idempotent on purpose: `sessions.markCompleted` is a no-op when the
- * session is already completed, so a retried submit (flaky network, a
- * double click) can never create a duplicate completed session.
+ * Idempotent on purpose: `sessions.markCompleted` only transitions a
+ * session whose status isn't already "completed" (an atomic conditional
+ * update), so a retried submit (flaky network, a double click) can never
+ * create a duplicate completed session.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -26,11 +27,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { alreadyCompleted } = await repositories.sessions.markCompleted(
-      body.sessionRowRef
+      session.id
     );
 
     console.info("[interview] submission completed", {
-      sessionId: body.sessionId,
+      sessionId: session.id,
       alreadyCompleted,
     });
 

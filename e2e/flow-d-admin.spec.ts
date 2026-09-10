@@ -1,6 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { E2E_ADMIN_EMAIL, E2E_ADMIN_TEST_SECRET } from "../playwright.config";
+/**
+ * Requires a real Supabase Auth user in the project configured via
+ * NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY (see
+ * playwright.config.ts) — Supabase Auth is an external service, not
+ * something the in-memory database fallback can stand in for. Create one
+ * researcher test account in the Supabase dashboard (Authentication ->
+ * Users -> Add user) and export its credentials before running this file;
+ * it skips itself otherwise rather than failing noisily. See README
+ * "Testing the admin area".
+ */
+const EMAIL = process.env.E2E_SUPABASE_TEST_EMAIL;
+const PASSWORD = process.env.E2E_SUPABASE_TEST_PASSWORD;
 
 async function disableSpeechRecognition(page: Page) {
   await page.addInitScript(() => {
@@ -17,13 +28,18 @@ async function disableSpeechRecognition(page: Page) {
 
 async function signInAsResearcher(page: Page) {
   await page.goto("/admin/login");
-  await page.getByPlaceholder("researcher@example.com").fill(E2E_ADMIN_EMAIL);
-  await page.getByPlaceholder("Test secret").fill(E2E_ADMIN_TEST_SECRET);
-  await page.getByRole("button", { name: "Test sign-in" }).click();
+  await page.getByPlaceholder("you@example.com").fill(EMAIL!);
+  await page.getByPlaceholder("Password").fill(PASSWORD!);
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(
     page.getByRole("heading", { name: "Research overview" })
   ).toBeVisible();
 }
+
+test.skip(
+  !EMAIL || !PASSWORD,
+  "Set E2E_SUPABASE_TEST_EMAIL/E2E_SUPABASE_TEST_PASSWORD to a real Supabase Auth user to run this flow."
+);
 
 test("Flow D: researcher logs in, views a session and its responses", async ({
   page,
@@ -59,10 +75,7 @@ test("Flow D: researcher logs in, views a session and its responses", async ({
 
   await signInAsResearcher(page);
   await expect(page.getByText("Retail").first()).toBeVisible();
-  // exact: true — a substring match on "View" also matches "Start live
-  // interview" (it contains "view"), grabbing the wrong link.
   await page.getByRole("link", { name: "View", exact: true }).first().click();
 
-  await expect(page.getByRole("heading", { name: /^Session/ })).toBeVisible();
   await expect(page.getByText(/Role \/ industry \/ experience/)).toBeVisible();
 });

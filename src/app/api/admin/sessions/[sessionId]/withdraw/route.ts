@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { requireAdminSession } from "@/lib/google-sheets/admin-guard";
-import { KnownApiError, toSafeApiError } from "@/lib/google-sheets/api-errors";
-import { createRepositories } from "@/lib/google-sheets/repositories";
-import { withdrawSession } from "@/lib/google-sheets/withdrawal";
+import { requireAdminSession } from "@/lib/supabase/admin-guard";
+import { KnownApiError, toSafeApiError } from "@/lib/supabase/api-errors";
+import { createRepositories } from "@/lib/supabase/repositories";
+import { withdrawSession } from "@/lib/supabase/withdrawal";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +22,14 @@ export async function POST(_request: Request, { params }: RouteParams) {
     const { sessionId } = await params;
     const repositories = createRepositories();
 
-    const found = await repositories.sessions.findBySessionId(sessionId);
-    if (!found) throw new KnownApiError(404, "Session not found.");
+    const session = await repositories.sessions.getById(sessionId);
+    if (!session) throw new KnownApiError(404, "Session not found.");
 
-    const result = await withdrawSession(repositories, found.rowRef);
+    const result = await withdrawSession(repositories, sessionId);
 
     console.info("[admin] session withdrawn", {
       sessionId: result.sessionId,
-      byAdmin: admin.user?.email,
+      byAdmin: admin.email,
       scrubbedResponseCount: result.scrubbedResponseCount,
     });
 

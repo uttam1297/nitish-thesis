@@ -3,8 +3,16 @@ import { defineConfig, devices } from "@playwright/test";
 const port = 3127;
 const baseURL = `http://127.0.0.1:${port}`;
 
-export const E2E_ADMIN_EMAIL = "researcher@example.com";
-export const E2E_ADMIN_TEST_SECRET = "e2e-test-only-secret";
+/**
+ * The project URL and anon/publishable key are meant to be public (RLS
+ * denies the anon role everything — see the migration) — safe to bake
+ * into the e2e config. `SUPABASE_SERVICE_ROLE_KEY` is deliberately left
+ * unset here: without it, every repository falls back to an in-memory
+ * store (see `src/lib/supabase/server-client.ts`), so e2e runs never
+ * touch the real research database.
+ */
+const SUPABASE_URL = "https://kelsktxbdhhmrkvmoyam.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_hJojVi2w7D5SpYaalN9RzQ_CAAU0xNj";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -25,13 +33,9 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 60_000,
     env: {
-      // No GOOGLE_* vars: research data uses the in-memory Sheets fallback
-      // for e2e runs, never a real spreadsheet.
-      AUTH_SECRET: "e2e-test-only-auth-secret-not-for-production",
-      AUTH_TRUST_HOST: "true",
-      ADMIN_ALLOWED_EMAILS: E2E_ADMIN_EMAIL,
-      ALLOW_ADMIN_TEST_LOGIN: "true",
-      E2E_ADMIN_TEST_SECRET,
+      NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
+      // SUPABASE_SERVICE_ROLE_KEY intentionally unset — see comment above.
     },
   },
 });

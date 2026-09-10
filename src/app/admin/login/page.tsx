@@ -1,23 +1,25 @@
-import { signIn } from "@/auth";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
-
-// Must read ALLOW_ADMIN_TEST_LOGIN at request time, not bake it in as a
-// static page at build time (the build environment is not the runtime
-// environment — see README "Vercel deployment").
-export const dynamic = "force-dynamic";
+import { createSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 /**
- * The Google button is the real path. The plain-text form below only
- * renders when explicitly opted into via `ALLOW_ADMIN_TEST_LOGIN=true`
- * (see `src/auth.ts`) — it exists so Playwright/CI can exercise `/admin`
- * without a live Google OAuth consent screen, and must never be set in a
- * real deployment's environment variables.
+ * Email/password sign-in via Supabase Auth. Public sign-up is expected to
+ * be disabled in the Supabase project (dashboard setting) — the one
+ * researcher account is created manually there (or via the Supabase CLI),
+ * so a successful sign-in here already implies "is the researcher". See
+ * `admin-guard.ts` for the optional extra email allowlist.
  */
 export default function AdminLoginPage() {
-  const devBypassEnabled =
-    process.env.ALLOW_ADMIN_TEST_LOGIN === "true" &&
-    Boolean(process.env.E2E_ADMIN_TEST_SECRET);
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
@@ -25,53 +27,57 @@ export default function AdminLoginPage() {
         <div className="grid gap-1 text-center">
           <h1 className="text-xl font-semibold">Researcher sign-in</h1>
           <p className="text-sm text-muted-foreground">
-            Restricted to allowlisted researcher accounts.
+            Restricted to the researcher account for this study.
           </p>
         </div>
 
         <form
-          action={async () => {
-            "use server";
-            await signIn("google", { redirectTo: "/admin" });
+          className="grid gap-3"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setPending(true);
+            setError(null);
+            try {
+              const supabase = createSupabaseBrowserClient();
+              const { error: signInError } =
+                await supabase.auth.signInWithPassword({ email, password });
+              if (signInError) throw new Error(signInError.message);
+              router.replace("/admin");
+              router.refresh();
+            } catch (cause) {
+              setError(
+                cause instanceof Error
+                  ? "Invalid email or password."
+                  : "Something went wrong."
+              );
+            } finally {
+              setPending(false);
+            }
           }}
         >
-          <Button type="submit" className="w-full">
-            Sign in with Google
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="rounded-md border px-3 py-2 text-sm"
+          />
+          <input
+            type="password"
+            required
+            autoComplete="current-password"
+            placeholder="Password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="rounded-md border px-3 py-2 text-sm"
+          />
+          {error && <p className="text-sm text-danger">{error}</p>}
+          <Button type="submit" disabled={pending} className="w-full">
+            {pending ? "Signing in…" : "Sign in"}
           </Button>
         </form>
-
-        {devBypassEnabled && (
-          <form
-            action={async (formData: FormData) => {
-              "use server";
-              await signIn("e2e-test-bypass", {
-                email: formData.get("email"),
-                secret: formData.get("secret"),
-                redirectTo: "/admin",
-              });
-            }}
-            className="grid gap-2 border-t pt-4"
-          >
-            <p className="text-xs text-muted-foreground">Test login</p>
-            <input
-              name="email"
-              type="email"
-              placeholder="researcher@example.com"
-              required
-              className="rounded-md border px-3 py-2 text-sm"
-            />
-            <input
-              name="secret"
-              type="password"
-              placeholder="Test secret"
-              required
-              className="rounded-md border px-3 py-2 text-sm"
-            />
-            <Button type="submit" variant="secondary">
-              Test sign-in
-            </Button>
-          </form>
-        )}
       </Surface>
     </main>
   );

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { requireAdminSession } from "@/lib/google-sheets/admin-guard";
-import { KnownApiError, toSafeApiError } from "@/lib/google-sheets/api-errors";
-import { createRepositories } from "@/lib/google-sheets/repositories";
+import { requireAdminSession } from "@/lib/supabase/admin-guard";
+import { KnownApiError, toSafeApiError } from "@/lib/supabase/api-errors";
+import { createRepositories } from "@/lib/supabase/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -17,22 +17,17 @@ export async function GET(_request: Request, { params }: RouteParams) {
     const { sessionId } = await params;
     const repositories = createRepositories();
 
-    const found = await repositories.sessions.findBySessionId(sessionId);
-    if (!found) throw new KnownApiError(404, "Session not found.");
+    const session = await repositories.sessions.getById(sessionId);
+    if (!session) throw new KnownApiError(404, "Session not found.");
 
-    const [participants, responses, consent] = await Promise.all([
-      repositories.participants.listAll(),
+    const [participant, responses, consent] = await Promise.all([
+      repositories.participants.getById(session.participantId),
       repositories.responses.listBySession(sessionId),
       repositories.consent.listBySession(sessionId),
     ]);
-    const participant =
-      participants.find(
-        (p) => p.participantId === found.record.participantId
-      ) ?? null;
 
     return NextResponse.json({
-      session: found.record,
-      rowRef: found.rowRef,
+      session,
       participant,
       consent: consent.at(-1) ?? null,
       responses,
