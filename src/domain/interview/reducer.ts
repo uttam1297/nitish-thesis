@@ -1,3 +1,4 @@
+import { CONSENT_VERSION } from "@/config/study";
 import {
   buildTimeline,
   nextStepId,
@@ -39,7 +40,7 @@ export function createInitialState(
     consent: {
       granted: false,
       grantedAt: null,
-      consentVersion: questionnaire.version,
+      consentVersion: CONSENT_VERSION,
     },
     returningToReview: false,
     startedAt: new Date().toISOString(),
