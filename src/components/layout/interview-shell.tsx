@@ -1,5 +1,7 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 
+import htwLogo from "@/assets/htw-logo.png";
 import { DiscoveryLineArt } from "@/components/illustration/line-art";
 import { Button } from "@/components/ui/button";
 import { ResumeLinkNote } from "@/components/layout/resume-link-note";
@@ -13,6 +15,7 @@ const SYNC_STATUS_LABEL: Record<SyncStatus, string | null> = {
 };
 
 interface InterviewShellProps {
+  showUniversityLogo?: boolean;
   progress?: ReactNode;
   syncStatus?: SyncStatus;
   resumeLink?: string | null;
@@ -22,6 +25,7 @@ interface InterviewShellProps {
 }
 
 export function InterviewShell({
+  showUniversityLogo = false,
   progress,
   syncStatus,
   resumeLink,
@@ -52,9 +56,19 @@ export function InterviewShell({
 
       <header className="relative z-10 mx-auto w-full max-w-(--width-interview) px-4 pt-5 sm:px-6 sm:pt-7">
         <div className="flex min-h-8 items-center justify-between gap-4">
-          <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-            Research interview
-          </p>
+          {showUniversityLogo ? (
+            <Image
+              src={htwLogo}
+              alt="HTW Berlin University of Applied Sciences"
+              priority
+              sizes="(min-width: 640px) 96px, 84px"
+              className="h-auto w-21 sm:w-24"
+            />
+          ) : (
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+              Research interview
+            </p>
+          )}
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
             Confidential · voluntary
             {syncLabel && (

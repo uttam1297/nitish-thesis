@@ -61,6 +61,7 @@ export function InterviewFlow() {
 
   return (
     <InterviewShell
+      showUniversityLogo={currentStep.kind === "welcome"}
       progress={
         showProgress ? (
           <ProgressIndicator
