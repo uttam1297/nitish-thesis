@@ -71,6 +71,16 @@ export interface SubmitResult {
   participantCode: string | null;
 }
 
+export class InterviewApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = "InterviewApiError";
+  }
+}
+
 async function postJson<TResult>(url: string, body: unknown): Promise<TResult> {
   const response = await fetch(url, {
     method: "POST",
@@ -79,9 +89,10 @@ async function postJson<TResult>(url: string, body: unknown): Promise<TResult> {
   });
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(
+    throw new InterviewApiError(
       (payload && typeof payload.error === "string" && payload.error) ||
-        `Request to ${url} failed with status ${response.status}.`
+        `Request to ${url} failed with status ${response.status}.`,
+      response.status
     );
   }
   return response.json() as Promise<TResult>;
@@ -133,9 +144,10 @@ export async function resumeServerSession(
   );
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    throw new Error(
+    throw new InterviewApiError(
       (payload && typeof payload.error === "string" && payload.error) ||
-        "Could not resume this session."
+        "Could not resume this session.",
+      response.status
     );
   }
   return response.json() as Promise<ResumeResult>;
