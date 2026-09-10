@@ -18,9 +18,41 @@ export interface GoogleSheetsCredentials {
  * newline, so `GOOGLE_PRIVATE_KEY` is usually set with escaped `\n`
  * sequences. Convert those back to real newlines; a key that already has
  * real newlines (e.g. from a local `.env` heredoc) is left untouched.
+ *
+ * Also tolerates two common paste mistakes that both produce the same
+ * opaque `ERR_OSSL_UNSUPPORTED` / "DECODER routines::unsupported" error
+ * from Node, with no hint as to the actual cause:
+ *
+ * 1. Copying the value straight out of the downloaded JSON key file,
+ *    including its surrounding double quotes.
+ * 2. An env-var UI that flattens a multi-line paste to one line and drops
+ *    every newline entirely — no real newlines *and* no literal `\n` left
+ *    for step 1 above to convert. Detected by the BEGIN/END PEM markers
+ *    still being present with nothing but base64 between them, and fixed
+ *    by reinserting the line breaks.
  */
-function normalizePrivateKey(raw: string): string {
-  return raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
+export function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  if (key.includes("\\n")) {
+    key = key.replace(/\\n/g, "\n");
+  }
+  key = key.trim();
+
+  if (!key.includes("\n")) {
+    const match = key.match(/-----BEGIN ([A-Z ]+)-----(.*)-----END \1-----/);
+    if (match) {
+      const [, label, body] = match;
+      key = `-----BEGIN ${label}-----\n${body.trim()}\n-----END ${label}-----\n`;
+    }
+  }
+
+  return key;
 }
 
 /**
