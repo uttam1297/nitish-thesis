@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { requireAdminSession } from "@/lib/google-sheets/admin-guard";
-import { toSafeApiError } from "@/lib/google-sheets/api-errors";
-import { createRepositories } from "@/lib/google-sheets/repositories";
+import { requireAdminSession } from "@/lib/supabase/admin-guard";
+import { toSafeApiError } from "@/lib/supabase/api-errors";
+import { createRepositories } from "@/lib/supabase/repositories";
 
 export const dynamic = "force-dynamic";
 
-/** Overview + session list. Full-sheet reads: admin-only, infrequent. */
+/** Overview + session list. Admin-only, infrequent. */
 export async function GET() {
   try {
     await requireAdminSession();
@@ -15,17 +15,11 @@ export async function GET() {
       repositories.sessions.listAll(),
       repositories.participants.listAll(),
     ]);
-    const participantsById = new Map(
-      participants.map((participant) => [
-        participant.participantId,
-        participant,
-      ])
-    );
+    const participantsById = new Map(participants.map((p) => [p.id, p]));
 
-    const rows = sessions.map(({ record, rowRef }) => ({
-      ...record,
-      rowRef,
-      participant: participantsById.get(record.participantId) ?? null,
+    const rows = sessions.map((session) => ({
+      ...session,
+      participant: participantsById.get(session.participantId) ?? null,
     }));
 
     const overview = {

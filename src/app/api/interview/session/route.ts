@@ -1,14 +1,13 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { toSafeApiError, KnownApiError } from "@/lib/google-sheets/api-errors";
+import { toSafeApiError, KnownApiError } from "@/lib/supabase/api-errors";
 import {
   createSessionRequestSchema,
   resumeQuerySchema,
-} from "@/lib/google-sheets/api-schemas";
+} from "@/lib/supabase/api-schemas";
 import { CONSENT_VERSION } from "@/config/study";
-import { QUESTIONNAIRE_VERSION } from "@/config/interview";
-import { createRepositories } from "@/lib/google-sheets/repositories";
+import { createRepositories } from "@/lib/supabase/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -30,60 +29,31 @@ async function setResumeCookie(resumeToken: string): Promise<void> {
 export async function POST(request: NextRequest) {
   try {
     const body = createSessionRequestSchema.parse(await request.json());
+    const repositories = createRepositories();
 
     // Never trust a client-supplied questionnaire version: it must match
-    // what this server actually serves, or historical/incoming data could
-    // end up mislabeled.
-    if (body.questionnaireVersion !== QUESTIONNAIRE_VERSION) {
+    // an active version this server actually serves.
+    const questionnaireVersion =
+      await repositories.study.getActiveQuestionnaireVersion();
+    if (body.questionnaireVersion !== questionnaireVersion.version) {
       throw new KnownApiError(
         409,
         "Your session was started under an outdated version of this study. Please reload the page."
       );
     }
 
-    const repositories = createRepositories();
-
-    // Idempotency: a retried "start a session" request (network blip,
-    // double-fire) must not create a second participant/session/consent
-    // row set. If this exact client request already succeeded, reattach
-    // to that session instead — see SessionRepository.rotateResumeToken
-    // for why the returned token differs from the original attempt's.
-    // No key at all (older cached client, see the schema comment) just
-    // means this one request can't be deduplicated — fall through to a
-    // normal create rather than failing the request.
-    const existing = body.clientRequestId
-      ? await repositories.sessions.findByClientRequestId(
-          body.clientRequestId
-        )
-      : null;
-    if (existing) {
-      const resumeToken = await repositories.sessions.rotateResumeToken(
-        existing.rowRef
-      );
-      await setResumeCookie(resumeToken);
-      console.info("[interview] session creation retried (idempotent)", {
-        sessionId: existing.record.sessionId,
-      });
-      return NextResponse.json({
-        participantId: existing.record.participantId,
-        sessionId: existing.record.sessionId,
-        sessionRowRef: existing.rowRef,
-        resumeToken,
-        startedAt: existing.record.startedAt,
-      });
-    }
-
     const participant = await repositories.participants.create(body.profile);
     const { session, resumeToken } = await repositories.sessions.create({
-      participantId: participant.participantId,
-      questionnaireVersion: body.questionnaireVersion,
+      participantId: participant.id,
+      questionnaireVersionId: questionnaireVersion.id,
+      questionnaireVersion: questionnaireVersion.version,
       responseMode: body.responseMode,
       firstQuestionId: body.firstQuestionId,
       clientRequestId: body.clientRequestId,
     });
     await repositories.consent.record({
-      participantId: participant.participantId,
-      sessionId: session.record.sessionId,
+      sessionId: session.id,
+      participantId: participant.id,
       consentVersion: body.consent.consentVersion || CONSENT_VERSION,
       participationConsent: body.consent.participationConsent,
       voiceInputConsent: body.consent.voiceInputConsent,
@@ -93,16 +63,15 @@ export async function POST(request: NextRequest) {
     await setResumeCookie(resumeToken);
 
     console.info("[interview] session created", {
-      sessionId: session.record.sessionId,
+      sessionId: session.id,
       responseMode: body.responseMode,
     });
 
     return NextResponse.json({
-      participantId: participant.participantId,
-      sessionId: session.record.sessionId,
-      sessionRowRef: session.rowRef,
+      participantId: participant.id,
+      sessionId: session.id,
       resumeToken,
-      startedAt: session.record.startedAt,
+      startedAt: session.startedAt,
     });
   } catch (error) {
     const safe = toSafeApiError(
@@ -126,26 +95,43 @@ export async function GET(request: NextRequest) {
     }
 
     const repositories = createRepositories();
-    const found = await repositories.sessions.findByResumeToken(
+    const session = await repositories.sessions.findByResumeToken(
       parsed.data.token
     );
-    if (!found) {
+    if (!session) {
       throw new KnownApiError(404, "This resume link is no longer valid.");
     }
-    if (found.record.status === "withdrawn") {
+    if (session.status === "withdrawn") {
       throw new KnownApiError(410, "This session has been withdrawn.");
     }
 
     const [responses, consent] = await Promise.all([
-      repositories.responses.listBySession(found.record.sessionId),
-      repositories.consent.listBySession(found.record.sessionId),
+      repositories.responses.listBySession(session.id),
+      repositories.consent.listBySession(session.id),
     ]);
 
     return NextResponse.json({
-      session: found.record,
-      sessionRowRef: found.rowRef,
-      responses,
-      consent: consent.at(-1) ?? null,
+      session: {
+        sessionId: session.id,
+        participantId: session.participantId,
+        status: session.status,
+        currentQuestionId: session.currentQuestionId,
+        responseMode: session.responseMode,
+        questionnaireVersion: session.questionnaireVersion,
+      },
+      responses: responses.map((r) => ({
+        questionId: r.questionId,
+        construct: r.construct,
+        responseType: r.responseType,
+        responseValue: JSON.stringify(r.responseValue),
+        updatedAt: r.updatedAt,
+      })),
+      consent: consent.at(-1)
+        ? {
+            consentVersion: consent.at(-1)!.consentVersion,
+            consentedAt: consent.at(-1)!.consentedAt,
+          }
+        : null,
     });
   } catch (error) {
     const safe = toSafeApiError(

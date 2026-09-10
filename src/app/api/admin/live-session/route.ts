@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { requireAdminSession } from "@/lib/google-sheets/admin-guard";
-import { toSafeApiError } from "@/lib/google-sheets/api-errors";
-import { liveSessionRequestSchema } from "@/lib/google-sheets/api-schemas";
-import { createRepositories } from "@/lib/google-sheets/repositories";
+import { requireAdminSession } from "@/lib/supabase/admin-guard";
+import { toSafeApiError } from "@/lib/supabase/api-errors";
+import { liveSessionRequestSchema } from "@/lib/supabase/api-schemas";
+import { createRepositories } from "@/lib/supabase/repositories";
 
 export const dynamic = "force-dynamic";
 
@@ -19,16 +19,20 @@ export async function POST(request: NextRequest) {
     const body = liveSessionRequestSchema.parse(await request.json());
     const repositories = createRepositories();
 
+    const questionnaireVersion =
+      await repositories.study.getActiveQuestionnaireVersion();
+
     const participant = await repositories.participants.create(body.profile);
     const { session, resumeToken } = await repositories.sessions.create({
-      participantId: participant.participantId,
-      questionnaireVersion: body.questionnaireVersion,
+      participantId: participant.id,
+      questionnaireVersionId: questionnaireVersion.id,
+      questionnaireVersion: questionnaireVersion.version,
       responseMode: "live_interview",
       firstQuestionId: body.firstQuestionId,
     });
     await repositories.consent.record({
-      participantId: participant.participantId,
-      sessionId: session.record.sessionId,
+      sessionId: session.id,
+      participantId: participant.id,
       consentVersion: body.consent.consentVersion,
       participationConsent: body.consent.participationConsent,
       voiceInputConsent: body.consent.voiceInputConsent,
@@ -36,9 +40,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({
-      participantId: participant.participantId,
-      sessionId: session.record.sessionId,
-      sessionRowRef: session.rowRef,
+      participantId: participant.id,
+      sessionId: session.id,
       resumeToken,
       resumeLinkPath: `/interview/resume?token=${resumeToken}`,
     });

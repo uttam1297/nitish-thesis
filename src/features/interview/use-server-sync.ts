@@ -26,12 +26,13 @@ const SYNC_DEBOUNCE_MS = 1200;
 const RETRY_INTERVAL_MS = 8000;
 
 /**
- * Layers server persistence on top of the Phase 2 interview engine without
+ * Layers server persistence on top of the interview engine without
  * changing it: it observes `interview.state`, and mirrors changed answers
- * to Google Sheets (via the API routes) using the batching/row-ref
- * strategy documented in `src/lib/google-sheets/response-repository.ts`.
- * Local autosave (`InterviewProvider`) remains the source of truth —
- * a failed sync never touches it.
+ * to Postgres (via the API routes), batched and debounced. Local autosave
+ * (`InterviewProvider`) remains the source of truth — a failed sync never
+ * touches it. No row-ref tracking is needed here: the server's
+ * `UNIQUE(session_id, question_id)` upsert means the client only ever
+ * needs to send its answers.
  */
 export function useServerSync(interview: InterviewContextValue) {
   const [status, setStatus] = useState<SyncStatus>("idle");
@@ -115,9 +116,7 @@ export function useServerSync(interview: InterviewContextValue) {
         identityRef.current = {
           participantId: created.participantId,
           sessionId: created.sessionId,
-          sessionRowRef: created.sessionRowRef,
           resumeToken: created.resumeToken,
-          rowRefs: {},
           syncedUpdatedAt: {},
         };
         saveSessionIdentity(identityRef.current);
@@ -138,21 +137,18 @@ export function useServerSync(interview: InterviewContextValue) {
           construct: question.construct,
           responseType: question.responseType,
           responseValue: JSON.stringify(response.value),
-          rowRef: identity.rowRefs[question.id],
         });
       }
 
-      const result = await syncAnswers({
+      await syncAnswers({
         sessionId: identity.sessionId,
-        sessionRowRef: identity.sessionRowRef,
         resumeToken: identity.resumeToken,
         currentQuestionId: state.currentStepId,
         progressPercentage: interview.progress.percent,
         answers: changed,
       });
 
-      for (const { questionId, rowRef } of result.rowRefs) {
-        identity.rowRefs[questionId] = rowRef;
+      for (const { questionId } of changed) {
         const response = state.responses[questionId];
         if (response) identity.syncedUpdatedAt[questionId] = response.updatedAt;
       }
@@ -200,7 +196,6 @@ export function useServerSync(interview: InterviewContextValue) {
       try {
         await submitServerSession({
           sessionId: identity.sessionId,
-          sessionRowRef: identity.sessionRowRef,
           resumeToken: identity.resumeToken,
         });
       } catch {

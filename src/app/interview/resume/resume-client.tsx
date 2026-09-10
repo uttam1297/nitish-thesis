@@ -96,12 +96,7 @@ export function ResumeClient({ token }: ResumeClientProps) {
         saveSessionIdentity({
           participantId: result.session.participantId,
           sessionId: result.session.sessionId,
-          sessionRowRef: result.sessionRowRef,
           resumeToken: token,
-          // Dropped deliberately: the next sync re-resolves each row by
-          // (session, question) — see ResponseRepository — so a stale
-          // rowRef here can never point at the wrong row.
-          rowRefs: {},
           syncedUpdatedAt: {},
         });
 

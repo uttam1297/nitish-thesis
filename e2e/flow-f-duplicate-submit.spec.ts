@@ -71,22 +71,22 @@ test("Flow F: a duplicate final-submit request completes only one session", asyn
     window.localStorage.getItem("nitish-thesis-interview:session-identity:v1")
   );
   expect(identity).not.toBeNull();
-  const { sessionId, sessionRowRef, resumeToken } = JSON.parse(identity!);
+  const { sessionId, resumeToken } = JSON.parse(identity!);
 
   const results = await page.evaluate(
-    async ({ sessionId, sessionRowRef, resumeToken }) => {
+    async ({ sessionId, resumeToken }) => {
       const responses = await Promise.all(
         [1, 2].map(() =>
           fetch("/api/interview/submit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId, sessionRowRef, resumeToken }),
+            body: JSON.stringify({ sessionId, resumeToken }),
           }).then((r) => r.json())
         )
       );
       return responses;
     },
-    { sessionId, sessionRowRef, resumeToken }
+    { sessionId, resumeToken }
   );
 
   for (const result of results) {
