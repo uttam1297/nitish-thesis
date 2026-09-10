@@ -22,7 +22,7 @@ export function SectionTransitionScreen({
     index > 0 ? interview.questionnaire.sections[index - 1] : null;
 
   return (
-    <Surface className="mx-auto max-w-lg p-6 text-center sm:p-10">
+    <Surface className="mx-auto max-w-lg border-none p-6 text-center shadow-none sm:p-10">
       <div className="flex flex-col items-center gap-7">
         <div className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
           <CheckCircle2 aria-hidden="true" className="size-5" />

@@ -23,8 +23,8 @@ export function WelcomeScreen() {
   const { welcome } = studyContent;
 
   return (
-    <Surface className="mx-auto w-full max-w-(--width-reading) overflow-hidden">
-      <div className="relative overflow-hidden px-5 pt-6 sm:px-8 sm:pt-8">
+    <Surface className="mx-auto w-full max-w-(--width-interview) overflow-hidden border-none shadow-none">
+      <div className="relative mx-auto max-w-(--width-reading) overflow-hidden px-2 pt-6 sm:pt-8">
         <DiscoveryLineArt className="pointer-events-none absolute -top-6 -right-10 size-48 text-primary/10 sm:size-64" />
         <div className="relative flex flex-col gap-3">
           <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
@@ -39,7 +39,7 @@ export function WelcomeScreen() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-5 px-5 pt-5 pb-6 sm:px-8 sm:pb-8">
+      <div className="mx-auto flex max-w-(--width-reading) flex-col gap-5 px-2 pt-5 pb-6">
         {interview.hasResumableDraft && (
           <div className="grid gap-3 rounded-lg border bg-surface-subtle p-4">
             <h2 className="text-sm font-medium">{welcome.resume.title}</h2>

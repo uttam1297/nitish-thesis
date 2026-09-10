@@ -25,29 +25,31 @@ export function QuestionContainer({
   children,
 }: QuestionContainerProps) {
   return (
-    <Surface className="mx-auto flex w-full max-w-(--width-reading) flex-col overflow-hidden p-0 max-h-[calc(100dvh-9rem)]">
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5 sm:p-7">
-        <div className="flex flex-col gap-2.5">
-          <SectionHeading>{section}</SectionHeading>
-          <h1
-            id={headingId}
-            className="text-xl leading-snug font-medium tracking-[-0.015em] text-balance sm:text-2xl"
-          >
-            {prompt}
-          </h1>
-          {supportingText && (
-            <p
-              id={supportingTextId}
-              className="max-w-prose text-sm leading-relaxed text-muted-foreground"
+    <Surface className="mx-auto flex max-h-[calc(100dvh-8rem)] w-full max-w-(--width-interview) flex-col overflow-hidden border-none p-0 shadow-none">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-6 sm:px-10 sm:py-8">
+        <div className="mx-auto flex w-full max-w-(--width-reading) flex-col gap-5">
+          <div className="flex flex-col gap-2.5">
+            <SectionHeading>{section}</SectionHeading>
+            <h1
+              id={headingId}
+              className="text-xl leading-snug font-medium tracking-[-0.015em] text-balance sm:text-2xl"
             >
-              {supportingText}
-            </p>
-          )}
+              {prompt}
+            </h1>
+            {supportingText && (
+              <p
+                id={supportingTextId}
+                className="max-w-prose text-sm leading-relaxed text-muted-foreground"
+              >
+                {supportingText}
+              </p>
+            )}
+          </div>
+          {children}
         </div>
-        {children}
       </div>
-      <div className="shrink-0 border-t bg-surface px-5 py-4 sm:px-7">
-        {footer}
+      <div className="shrink-0 border-t px-6 py-4 sm:px-10">
+        <div className="mx-auto w-full max-w-(--width-reading)">{footer}</div>
       </div>
     </Surface>
   );
