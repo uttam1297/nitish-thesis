@@ -276,14 +276,17 @@ export function CompletionBackdrop({
               initial={reduceMotion ? false : { opacity: 0.95 }}
               animate={
                 reduceMotion
-                  ? { cx: 720, cy: 334, opacity: 0 }
+                  ? { x: 530, y: 114, opacity: 0 }
                   : {
-                      cx: [190, 370, 548, 652, 720],
-                      cy: [220, 258, 302, 323, 334],
+                      x: [0, 180, 358, 462, 530],
+                      y: [0, 38, 82, 103, 114],
                       opacity: [0.95, 1, 1, 1, 0],
                     }
               }
-              transition={{ duration: 1.08, ease: emphasizedEase }}
+              transition={{
+                duration: reduceMotion ? 0 : 1.08,
+                ease: emphasizedEase,
+              }}
             />
             <motion.circle
               cx="1250"
@@ -294,14 +297,17 @@ export function CompletionBackdrop({
               initial={reduceMotion ? false : { opacity: 0.95 }}
               animate={
                 reduceMotion
-                  ? { cx: 720, cy: 334, opacity: 0 }
+                  ? { x: -530, y: 114, opacity: 0 }
                   : {
-                      cx: [1250, 1068, 900, 790, 720],
-                      cy: [220, 190, 224, 294, 334],
+                      x: [0, -182, -350, -460, -530],
+                      y: [0, -30, 4, 74, 114],
                       opacity: [0.95, 1, 1, 1, 0],
                     }
               }
-              transition={{ duration: 1.08, ease: emphasizedEase }}
+              transition={{
+                duration: reduceMotion ? 0 : 1.08,
+                ease: emphasizedEase,
+              }}
             />
             <motion.circle
               cx="720"

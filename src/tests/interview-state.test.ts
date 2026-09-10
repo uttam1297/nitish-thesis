@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { questionnaire } from "@/config/interview";
+import { CONSENT_VERSION } from "@/config/study";
 import { validateAnswer } from "@/domain/interview/answers";
 import {
   createInitialState,
@@ -20,6 +21,13 @@ function reduce(
 }
 
 describe("in-memory Phase 1 state", () => {
+  it("tracks the consent text version independently of the questionnaire", () => {
+    const state = createInitialState(questionnaire);
+
+    expect(state.questionnaireVersion).toBe(questionnaire.version);
+    expect(state.consent.consentVersion).toBe(CONSENT_VERSION);
+  });
+
   it("records answers and preserves them during navigation", () => {
     const state = reduce(
       createInitialState(questionnaire),
