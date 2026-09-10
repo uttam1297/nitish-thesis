@@ -39,15 +39,14 @@ export function useServerSync(interview: InterviewContextValue) {
   const [participantCode, setParticipantCode] = useState<string | null>(null);
   const identityRef = useRef<SessionIdentity | null>(null);
   const hasSubmittedRef = useRef(false);
-  const inFlightRef = useRef(false);
+  const inFlightRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     identityRef.current = loadSessionIdentity();
   }, []);
 
-  const runSync = useCallback(async () => {
+  const performSync = useCallback(async () => {
     const { state, questionnaire } = interview;
-    if (inFlightRef.current) return;
 
     // The Participants sheet needs the profile fields, so server sync only
     // starts once the participant has moved past the profile ("about-you")
@@ -75,7 +74,6 @@ export function useServerSync(interview: InterviewContextValue) {
 
     if (!state.consent.granted || !pastProfileLayer) return;
 
-    inFlightRef.current = true;
     setStatus("saving");
     try {
       if (!identityRef.current) {
@@ -160,17 +158,36 @@ export function useServerSync(interview: InterviewContextValue) {
       // just mark the sync as failed so the UI can show a subtle retry
       // state. The local draft (Phase 2) still has every answer.
       setStatus("error");
-    } finally {
-      inFlightRef.current = false;
     }
   }, [interview]);
 
+  const runSync = useCallback((): Promise<void> => {
+    if (inFlightRef.current) return inFlightRef.current;
+
+    const operation = performSync();
+    inFlightRef.current = operation;
+    void operation.then(
+      () => {
+        if (inFlightRef.current === operation) inFlightRef.current = null;
+      },
+      () => {
+        if (inFlightRef.current === operation) inFlightRef.current = null;
+      }
+    );
+    return operation;
+  }, [performSync]);
+
   // Debounced sync on meaningful state changes (answers, navigation).
   useEffect(() => {
+    if (interview.state.status === "submitted") return;
     const timer = window.setTimeout(runSync, SYNC_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interview.state.responses, interview.state.currentStepId]);
+  }, [
+    interview.state.responses,
+    interview.state.currentStepId,
+    interview.state.status,
+  ]);
 
   // Silent retry while a sync attempt is failing.
   useEffect(() => {
@@ -188,7 +205,11 @@ export function useServerSync(interview: InterviewContextValue) {
     if (hasSubmittedRef.current) return;
     hasSubmittedRef.current = true;
 
-    void runSync().then(async () => {
+    void (async () => {
+      const pendingSync = inFlightRef.current;
+      if (pendingSync) await pendingSync;
+      await runSync();
+
       const identity = identityRef.current;
       if (!identity) {
         hasSubmittedRef.current = false;
@@ -206,7 +227,7 @@ export function useServerSync(interview: InterviewContextValue) {
         // in the (rare) case the submit call itself failed on the network.
         hasSubmittedRef.current = false;
       }
-    });
+    })();
   }, [interview.state.status, runSync]);
 
   const [resumeLink, setResumeLink] = useState<string | null>(null);
