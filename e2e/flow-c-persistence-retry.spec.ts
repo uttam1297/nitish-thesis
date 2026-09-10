@@ -88,3 +88,83 @@ test("Flow C: a temporary persistence failure retains local answers and retries 
   });
   await expect(page.getByText(/Saved$/)).toBeVisible({ timeout: 15_000 });
 });
+
+test("Flow C2: a deleted server session is recreated from the local draft", async ({
+  page,
+}) => {
+  await disableSpeechRecognition(page);
+  const staleSessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  await page.addInitScript((sessionId) => {
+    window.localStorage.setItem(
+      "nitish-thesis-interview:session-identity:v1",
+      JSON.stringify({
+        participantId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        sessionId,
+        resumeToken: "deleted-session-token",
+        syncedUpdatedAt: {},
+      })
+    );
+  }, staleSessionId);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page
+    .getByRole("checkbox", { name: /read and agree to all five statements/i })
+    .check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByText("Next section")).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page
+    .getByRole("checkbox", { name: "Product / Product Management" })
+    .check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("radio", { name: "Retail / E-commerce" }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("radio", { name: "3-6 years" }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.locator('label:has(input[name="q4"][value="3"])').click();
+
+  const staleSync = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/interview/sync") &&
+      response.status() === 404
+  );
+  const replacementSession = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/interview/session") && response.ok()
+  );
+  const recoveredSync = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/interview/sync") && response.ok()
+  );
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  await staleSync;
+  await replacementSession;
+  await recoveredSync;
+  await expect(page.getByText(/Saved$/)).toBeVisible({ timeout: 10_000 });
+
+  const recovered = await page.evaluate(async (oldSessionId) => {
+    const raw = window.localStorage.getItem(
+      "nitish-thesis-interview:session-identity:v1"
+    );
+    if (!raw) return null;
+    const identity = JSON.parse(raw);
+    const response = await fetch(
+      `/api/interview/session?token=${encodeURIComponent(identity.resumeToken)}`
+    );
+    const result = await response.json();
+    return {
+      identityChanged: identity.sessionId !== oldSessionId,
+      responseCount: result.responses?.length,
+      consentVersion: result.consent?.consentVersion,
+    };
+  }, staleSessionId);
+
+  expect(recovered).toEqual({
+    identityChanged: true,
+    responseCount: 4,
+    consentVersion: "1.0.0",
+  });
+});

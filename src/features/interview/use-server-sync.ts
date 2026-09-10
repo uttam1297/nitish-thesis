@@ -6,12 +6,14 @@ import { formatAnswer } from "@/domain/interview/summary";
 import type { InterviewContextValue } from "@/features/interview/interview-provider";
 import {
   createServerSession,
+  InterviewApiError,
   submitServerSession,
   syncAnswers,
   type SyncAnswerPayload,
 } from "@/features/interview/server-sync-client";
 import {
   clearPendingSessionRequestId,
+  clearSessionIdentity,
   loadOrCreatePendingSessionRequestId,
   loadSessionIdentity,
   saveSessionIdentity,
@@ -24,6 +26,10 @@ export type SyncStatus = "idle" | "saving" | "saved" | "error";
 const QUESTION_VERSION = "1";
 const SYNC_DEBOUNCE_MS = 1200;
 const RETRY_INTERVAL_MS = 8000;
+
+function isMissingSession(error: unknown): boolean {
+  return error instanceof InterviewApiError && error.status === 404;
+}
 
 /**
  * Layers server persistence on top of the interview engine without
@@ -74,8 +80,7 @@ export function useServerSync(interview: InterviewContextValue) {
 
     if (!state.consent.granted || !pastProfileLayer) return;
 
-    setStatus("saving");
-    try {
+    const syncCurrentState = async () => {
       if (!identityRef.current) {
         const profileQuestions = questionnaire.questions.filter(
           (q) =>
@@ -153,7 +158,28 @@ export function useServerSync(interview: InterviewContextValue) {
       }
       saveSessionIdentity(identity);
       setStatus("saved");
-    } catch {
+    };
+
+    setStatus("saving");
+    try {
+      await syncCurrentState();
+    } catch (error) {
+      if (identityRef.current && isMissingSession(error)) {
+        // A database reset or administrative deletion can invalidate the
+        // browser's cached session while its local answers are still valid.
+        // Drop only the stale protocol identity, create a fresh server
+        // session, and resend the current answers once.
+        identityRef.current = null;
+        clearSessionIdentity();
+        clearPendingSessionRequestId();
+        try {
+          await syncCurrentState();
+          return;
+        } catch {
+          // Fall through to the normal retry state. Local answers remain safe.
+        }
+      }
+
       // The participant-safe message already logged server-side; here we
       // just mark the sync as failed so the UI can show a subtle retry
       // state. The local draft (Phase 2) still has every answer.
@@ -208,24 +234,36 @@ export function useServerSync(interview: InterviewContextValue) {
     void (async () => {
       const pendingSync = inFlightRef.current;
       if (pendingSync) await pendingSync;
-      await runSync();
 
-      const identity = identityRef.current;
-      if (!identity) {
-        hasSubmittedRef.current = false;
-        return;
-      }
-      try {
-        const result = await submitServerSession({
-          sessionId: identity.sessionId,
-          resumeToken: identity.resumeToken,
-        });
-        setParticipantCode(result.participantCode);
-      } catch {
-        // Safe to leave unresolved: the participant already sees the local
-        // completion screen, and the retry loop above keeps syncing content
-        // in the (rare) case the submit call itself failed on the network.
-        hasSubmittedRef.current = false;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        await runSync();
+
+        const identity = identityRef.current;
+        if (!identity) {
+          hasSubmittedRef.current = false;
+          return;
+        }
+        try {
+          const result = await submitServerSession({
+            sessionId: identity.sessionId,
+            resumeToken: identity.resumeToken,
+          });
+          setParticipantCode(result.participantCode);
+          return;
+        } catch (error) {
+          if (attempt === 0 && isMissingSession(error)) {
+            identityRef.current = null;
+            clearSessionIdentity();
+            clearPendingSessionRequestId();
+            continue;
+          }
+
+          // Safe to leave unresolved: the participant already sees the local
+          // completion screen, and the retry loop above keeps syncing content
+          // in the (rare) case the submit call itself failed on the network.
+          hasSubmittedRef.current = false;
+          return;
+        }
       }
     })();
   }, [interview.state.status, runSync]);
