@@ -11,6 +11,8 @@ export interface CreateSessionPayload {
   questionnaireVersion: string;
   responseMode: "asynchronous_form" | "live_interview";
   firstQuestionId: string;
+  /** Idempotency key — see the comment on the schema field server-side. */
+  clientRequestId: string;
   profile: {
     role: string;
     industry: string;

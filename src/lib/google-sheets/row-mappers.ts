@@ -56,6 +56,8 @@ export function sessionToRow(record: SessionRecord): string[] {
     last_activity_at: record.lastActivityAt,
     completed_at: record.completedAt ?? "",
     withdrawn_at: record.withdrawnAt ?? "",
+    client_request_id: record.clientRequestId ?? "",
+    study_stage: record.studyStage,
   });
 }
 
@@ -74,6 +76,8 @@ export function rowToSession(row: string[]): SessionRecord {
     lastActivityAt: r.last_activity_at,
     completedAt: r.completed_at || undefined,
     withdrawnAt: r.withdrawn_at || undefined,
+    clientRequestId: r.client_request_id || undefined,
+    studyStage: r.study_stage === "main" ? "main" : "pilot",
   };
 }
 

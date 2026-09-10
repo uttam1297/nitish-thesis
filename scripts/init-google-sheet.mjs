@@ -42,6 +42,8 @@ const SHEETS = [
       "last_activity_at",
       "completed_at",
       "withdrawn_at",
+      "client_request_id",
+      "study_stage",
     ],
   },
   {

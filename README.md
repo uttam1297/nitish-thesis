@@ -51,6 +51,62 @@ preserved because it is present in the source file.
 - **Researcher admin area** (`/admin`) gated by Google sign-in restricted to
   an explicit allowlist, plus a minimal live-interview workflow.
 
+### What Phase 4 added on top of Phase 3 (hardening + pilot readiness)
+
+Phase 4 was an audit pass over the Phase 3 implementation. It found and
+fixed real gaps rather than adding new surface area:
+
+- **Response duplicate-row fix.** If a save's response never reached the
+  browser (dropped connection) and the browser retried with no cached
+  `rowRef`, the old code appended a second row for the same question. It
+  now looks the row up by (session, question) first — see
+  `ResponseRepository`'s class doc.
+- **Session-creation idempotency.** `POST /api/interview/session` now
+  requires a client-generated `clientRequestId`, persisted to
+  `localStorage` _before_ the request fires. A retry (dropped response,
+  double-fire) reattaches to the session the first attempt created
+  instead of duplicating the participant/session/consent row set — see
+  "Idempotency" below.
+- **Server-side questionnaire-version check.** The server now rejects a
+  session-creation request whose `questionnaireVersion` doesn't match its
+  own `QUESTIONNAIRE_VERSION`, rather than trusting whatever the client
+  sends.
+- **`ensureSheet` no longer runs on every request.** It used to call the
+  Sheets API on every single repository operation; it's now checked once
+  per tab per process and cached. It also now _fails clearly_ if an
+  existing tab's header row doesn't match what the code expects, instead
+  of silently re-stamping headers over a potentially different layout —
+  see "Google Sheets structure audit" below.
+- **Resume conflict strategy.** Documented and implemented — see "Resume
+  conflict strategy" below.
+- **Multi-tab warning.** The same session opened in two tabs no longer
+  silently risks one tab clobbering the other's progress with a stale
+  write — see "Multi-tab safety" below.
+- **Pilot readiness.** Every session is tagged `study_stage` (`pilot` by
+  default; set `STUDY_STAGE=main` when real data collection begins) — see
+  `PILOT_CHECKLIST.md`.
+- **Accuracy of participant-facing claims.** The completion screen
+  previously said "there is no server behind it yet", left over from
+  Phase 1/2 — this was simply false once Phase 3 shipped, and is fixed.
+  The voice control now also discloses that speech recognition runs via
+  the browser/OS, which may involve processing outside this application —
+  see "Voice experience" below.
+
+## Voice experience
+
+Voice is implemented via the browser's native Web Speech API
+(`SpeechRecognition`/`webkitSpeechRecognition`), behind the
+`VoiceTranscriptionAdapter` interface (`src/features/voice/`). This
+application does **not** control where that recognition actually runs:
+depending on the browser and OS, it may process audio on-device or send it
+to the browser/OS vendor's own servers. The application never claims
+otherwise to participants, and never receives or stores raw audio itself
+— only the transcript the participant sees, can edit, and explicitly
+keeps by continuing. States: `idle`, `listening`, `completed`, `error`
+(covers permission-denied and other failures), `unsupported`. Typing is
+always available regardless of state, and voice failure never blocks
+completion — see `use-voice-input.ts`.
+
 ## Spreadsheet structure
 
 Five tabs (`src/lib/google-sheets/sheet-schema.ts` is the single source of
@@ -119,6 +175,60 @@ truth for names and headers):
   local draft is untouched, and a background retry runs every ~8s until it
   succeeds.
 
+### Idempotency
+
+Every operation a browser might retry is safe to retry:
+
+- **Session creation** — a client-generated `clientRequestId` (persisted
+  to `localStorage` before the request fires, so it survives a closed tab)
+  lets the server recognize a retry and reattach to the original session
+  (`SessionRepository.findByClientRequestId`) rather than creating a
+  duplicate participant/session/consent row set. The reattach issues a
+  _new_ resume token and invalidates the old one
+  (`rotateResumeToken`) — the original token was never seen by anyone to
+  invalidate more surgically, since the response carrying it was lost.
+- **Response saves** — keyed on (session, question); see "Write strategy"
+  above and the duplicate-row fix in "What Phase 4 added".
+- **Final submission** — `SessionRepository.markCompleted` is a no-op once
+  a session is already `completed`; see `/api/interview/submit`.
+- **Withdrawal** — re-running it on an already-withdrawn session is safe
+  (it just re-scrubs the same rows to the same `"[WITHDRAWN]"` value).
+
+### Resume conflict strategy
+
+**Rule: per question, whichever copy has the newer `updatedAt` wins** —
+implemented in `mergeResponsesByRecency` (`src/features/interview/resume-merge.ts`)
+and used by the resume-by-link flow (`resume-client.tsx`). Concretely:
+
+- Opening a resume link for a session this browser has **no local record
+  of** simply hydrates the server's copy — nothing to conflict with.
+- Opening a resume link for a session this browser **already has local
+  progress for** (e.g. an old link opened again after edits that never
+  reached the server) merges answer-by-answer: local wins only where its
+  `updatedAt` is newer than the server's, so an unsynced edit is never
+  silently discarded, but a genuinely older local copy doesn't clobber
+  newer server data either.
+- This does not attempt real-time merge/collaboration — see "Multi-tab
+  safety" for why that's a deliberate non-goal.
+
+### Multi-tab safety
+
+Opening the same session in two tabs is handled minimally, not with
+real-time collaboration (this is a thesis form, not a collaborative
+document editor):
+
+- The browser's own `storage` event fires in every _other_ tab whenever
+  one tab writes the local draft. `InterviewProvider` listens for this and
+  sets a simple "another tab has newer progress" flag — it does not try
+  to auto-merge or auto-reload.
+- The affected tab shows a visible banner with a "Reload this tab" action.
+  Reloading picks up the other tab's saved draft via the normal Phase 2
+  resume-draft flow.
+- Server-side, the response write path's (session, question) keying (see
+  "Write strategy") means that even if both tabs do go on to save the
+  _same_ question, the result is one canonical row reflecting whichever
+  save reached the server last — never two rows.
+
 ## Environment variables
 
 Copy `.env.example` to `.env.local` and fill in real values. Summary:
@@ -130,6 +240,7 @@ Copy `.env.example` to `.env.local` and fill in real values. Summary:
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`                                                    | A _separate_ OAuth 2.0 Web Application client (not the service account) used for researcher Google sign-in.                                                                                       |
 | `ADMIN_ALLOWED_EMAILS`                                                                    | Comma-separated researcher emails allowed into `/admin`.                                                                                                                                          |
 | `ALLOW_ADMIN_TEST_LOGIN`, `E2E_ADMIN_TEST_SECRET`                                         | **Test/CI only.** Together they enable a Credentials-provider bypass so Playwright can sign in without a live Google consent screen. Never set these on a real deployment.                        |
+| `STUDY_STAGE`                                                                             | `"main"` marks new sessions as real data; anything else (including unset) defaults to `"pilot"`. See `PILOT_CHECKLIST.md`. Never read from the client — see "Google Sheets data integrity".       |
 
 `GOOGLE_PRIVATE_KEY` newline handling: paste it with escaped `\n` (how
 Vercel's env var UI stores multi-line values) or with real line breaks
@@ -167,6 +278,29 @@ automatically either way.
 
    Safe to re-run — it only creates missing tabs and rewrites header rows.
 
+   **Upgrading an existing spreadsheet:** Phase 4 added two columns to
+   `Sessions` (`client_request_id`, `study_stage`). Re-run this script
+   against any spreadsheet created under an earlier version before
+   deploying — see "Google Sheets structure audit" for what happens if you
+   don't.
+
+### Google Sheets structure audit
+
+`ensureSheet` (checked once per tab per server process, then cached — not
+on every request, see "What Phase 4 added") verifies a tab's header row
+matches what the code expects before any write:
+
+- **Missing tab:** created automatically with the correct headers.
+- **Existing tab with no header row yet** (e.g. created by hand): headers
+  are written.
+- **Existing tab with a header row that doesn't match:** the write is
+  **refused** with a clear server-side error (`SheetsClientError`,
+  logged with the expected vs. found headers) rather than guessing which
+  column is which — the participant sees only the generic safe message
+  ("Your response is saved on this device and will retry automatically."),
+  never the raw mismatch details. This is what protects against a manually
+  reordered/renamed column silently corrupting data.
+
 ## Local development setup
 
 ```bash
@@ -195,6 +329,14 @@ Open <http://localhost:3000/interview> for the participant flow and
 5. `AUTH_TRUST_HOST` is not needed on Vercel (it sets the host correctly
    itself); it's only needed for arbitrary local/CI hosts — see
    `playwright.config.ts`.
+
+## Data dictionary and pilot procedure
+
+- `DATA_DICTIONARY.md` — every column in every research sheet: type,
+  meaning, example, and research use.
+- `PILOT_CHECKLIST.md` — the researcher-facing checklist for reviewing a
+  2-3 person pilot before treating the questionnaire as final, plus how
+  pilot sessions (`study_stage = pilot`) relate to the final sample.
 
 ## How to inspect research responses
 
@@ -310,9 +452,21 @@ npm run build
 Open <http://localhost:3000/interview> during local development, and
 <http://localhost:3000/admin> for the researcher dashboard.
 
-## Not implemented (by design, this phase)
+## Not implemented (by design)
 
 Participant-facing generative AI, AI summarisation, automatic thematic
-coding, LLM analysis, raw audio storage, complex BI dashboards, and
-migration to another database provider — all explicitly out of scope for
-this phase.
+coding, LLM analysis, raw audio storage, elaborate BI dashboards, third-party
+analytics/tracking, and migration away from Google Sheets to another
+database provider — all explicitly out of scope.
+
+## Deferred manual verification
+
+Some Phase 4 checklist items require a real browser/device matrix this
+environment cannot exercise (headless CI only): cross-browser voice
+behavior (Chrome/Edge/Firefox/Safari), physical mobile devices at 320-430px
+plus tablet/landscape, and a full WCAG 2.2 AA manual pass (screen reader,
+zoom, keyboard-only). The codebase follows the same accessibility patterns
+already verified in Phase 1/2 (semantic landmarks, labelled controls,
+visible focus, `prefers-reduced-motion` handling, ARIA live regions for
+state changes) — but treat that as a starting point for a real device pass
+before a live pilot, not a substitute for one.

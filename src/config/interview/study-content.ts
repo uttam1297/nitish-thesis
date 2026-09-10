@@ -17,7 +17,7 @@ export const studyContent = {
     highlights: [
       "One question at a time",
       "Type your answer, or speak it if your browser supports voice input",
-      "Your progress is saved on this device only, so you can pause and resume",
+      "Your progress is saved as you go, so you can pause and resume",
     ],
     resume: {
       title: "You have an unfinished session",
@@ -72,7 +72,7 @@ export const studyContent = {
     title: "Thank you for taking part.",
     description: "You have reached the end of the interview.",
     localNotice:
-      "Your responses were kept only on this device for this prototype; there is no server behind it yet.",
+      "Your responses are stored under a pseudonymous participant code, not your name, in a private research record only the researcher can access.",
   },
 
   navigation: {

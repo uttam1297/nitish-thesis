@@ -13,6 +13,7 @@ describe("createSessionRequestSchema", () => {
         questionnaireVersion: "1.0.0",
         responseMode: "asynchronous_form",
         firstQuestionId: "q5",
+        clientRequestId: "11111111-1111-4111-8111-111111111111",
         profile: {
           role: "PM",
           industry: "Retail",
@@ -29,11 +30,32 @@ describe("createSessionRequestSchema", () => {
     ).not.toThrow();
   });
 
+  it("requires an idempotency key", () => {
+    expect(() =>
+      createSessionRequestSchema.parse({
+        questionnaireVersion: "1.0.0",
+        firstQuestionId: "q5",
+        profile: {
+          role: "",
+          industry: "",
+          experience: "",
+          closenessToDiscovery: "",
+        },
+        consent: {
+          consentVersion: "1.0.0",
+          participationConsent: true,
+          voiceInputConsent: false,
+        },
+      })
+    ).toThrow();
+  });
+
   it("never trusts an unconfirmed participation consent", () => {
     expect(() =>
       createSessionRequestSchema.parse({
         questionnaireVersion: "1.0.0",
         firstQuestionId: "q5",
+        clientRequestId: "11111111-1111-4111-8111-111111111111",
         profile: {
           role: "",
           industry: "",
@@ -55,6 +77,7 @@ describe("createSessionRequestSchema", () => {
         questionnaireVersion: "1.0.0",
         responseMode: "phone_call",
         firstQuestionId: "q5",
+        clientRequestId: "11111111-1111-4111-8111-111111111111",
         profile: {
           role: "",
           industry: "",
@@ -82,7 +105,7 @@ describe("syncRequestSchema", () => {
     }));
     expect(() =>
       syncRequestSchema.parse({
-        sessionId: "11111111-1111-1111-1111-111111111111",
+        sessionId: "11111111-1111-4111-8111-111111111111",
         sessionRowRef: 2,
         resumeToken: "token",
         currentQuestionId: "q1",
@@ -95,7 +118,7 @@ describe("syncRequestSchema", () => {
   it("rejects a percentage outside 0-100", () => {
     expect(() =>
       syncRequestSchema.parse({
-        sessionId: "11111111-1111-1111-1111-111111111111",
+        sessionId: "11111111-1111-4111-8111-111111111111",
         sessionRowRef: 2,
         resumeToken: "token",
         currentQuestionId: "q1",

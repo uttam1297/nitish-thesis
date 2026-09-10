@@ -8,9 +8,13 @@ import { Surface } from "@/components/ui/surface";
 import { questionnaire } from "@/config/interview";
 import { createInitialState } from "@/domain/interview/reducer";
 import type { AnswerValue, InterviewState } from "@/domain/interview/types";
+import { mergeResponsesByRecency } from "@/features/interview/resume-merge";
 import { resumeServerSession } from "@/features/interview/server-sync-client";
 import { draftStorage } from "@/lib/persistence/draft-storage";
-import { saveSessionIdentity } from "@/lib/persistence/session-identity-storage";
+import {
+  loadSessionIdentity,
+  saveSessionIdentity,
+} from "@/lib/persistence/session-identity-storage";
 
 interface ResumeClientProps {
   token: string | null;
@@ -54,11 +58,28 @@ export function ResumeClient({ token }: ResumeClientProps) {
           }
         }
 
+        // Conflict rule: if this browser already has local answers for
+        // this exact session (e.g. an old resume link opened again after
+        // some edits never made it to the server), keep whichever copy of
+        // each answer has the newer `updatedAt` — see resume-merge.ts —
+        // rather than letting the server response blindly clobber
+        // unsynced local text.
+        const localIdentity = loadSessionIdentity();
+        const localDraft = draftStorage.load();
+        const sameSession =
+          localIdentity?.sessionId === result.session.sessionId;
+        const mergedResponses = sameSession
+          ? mergeResponsesByRecency(
+              responses,
+              localDraft?.state.responses ?? {}
+            )
+          : responses;
+
         const state: InterviewState = {
           ...base,
           questionnaireVersion: result.session.questionnaireVersion,
           currentStepId: result.session.currentQuestionId || base.currentStepId,
-          responses,
+          responses: mergedResponses,
           consent: {
             granted: true,
             grantedAt: result.consent?.consentedAt ?? null,
@@ -77,6 +98,9 @@ export function ResumeClient({ token }: ResumeClientProps) {
           sessionId: result.session.sessionId,
           sessionRowRef: result.sessionRowRef,
           resumeToken: token,
+          // Dropped deliberately: the next sync re-resolves each row by
+          // (session, question) — see ResponseRepository — so a stale
+          // rowRef here can never point at the wrong row.
           rowRefs: {},
           syncedUpdatedAt: {},
         });

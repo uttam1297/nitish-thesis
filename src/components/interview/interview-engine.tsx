@@ -56,6 +56,7 @@ export function InterviewFlow() {
       }
       syncStatus={showProgress ? syncStatus : undefined}
       resumeLink={showProgress ? resumeLink : undefined}
+      otherTabWarning={interview.otherTabHasNewerProgress}
     >
       <AnimatePresence mode="wait" initial={false}>
         <MotionPanel key={currentStep.id} screenKey={currentStep.id}>

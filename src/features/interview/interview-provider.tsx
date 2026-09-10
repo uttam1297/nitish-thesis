@@ -33,6 +33,7 @@ import type {
   Step,
 } from "@/domain/interview/types";
 import {
+  DRAFT_STORAGE_KEY,
   draftStorage as defaultDraftStorage,
   type DraftStorage,
 } from "@/lib/persistence/draft-storage";
@@ -66,6 +67,8 @@ export interface InterviewContextValue {
   hasResumableDraft: boolean;
   resumeDraft: () => void;
   startOver: () => void;
+  /** True once another browser tab has saved progress on this interview. */
+  otherTabHasNewerProgress: boolean;
 }
 
 const InterviewContext = createContext<InterviewContextValue | null>(null);
@@ -98,18 +101,32 @@ export function InterviewProvider({
     createInitialState
   );
 
-  // Read once at mount time (not in an effect) so there is a single source
-  // of truth for the pending draft, rather than syncing it into its own
-  // piece of state. A stale-version draft is discarded immediately.
-  const [pendingDraft] = useState<InterviewState | null>(() => {
+  // Deliberately *not* a lazy useState initializer: that runs during the
+  // initial render, which on the server always sees no localStorage and on
+  // the client may see a real draft — a guaranteed hydration mismatch on
+  // the very first screen. Reading it in an effect means the first client
+  // render matches the server (no draft yet), and the banner appears a
+  // frame later once the real value is known — see React's hydration
+  // mismatch guidance for this exact pattern.
+  const [pendingDraft, setPendingDraft] = useState<InterviewState | null>(null);
+  useEffect(() => {
     const draft = draftStorage.load();
-    if (!draft) return null;
+    if (!draft) return;
     if (draft.questionnaireVersion !== questionnaire.version) {
       draftStorage.clear();
-      return null;
+      return;
     }
-    return draft.state;
-  });
+    // Deliberate exception to the "no setState in an effect" rule: this is
+    // exactly the documented case for it — syncing in a value (localStorage)
+    // that isn't available during the server render, so it can't be a lazy
+    // useState initializer without reintroducing the hydration mismatch
+    // this effect exists to avoid.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPendingDraft(draft.state);
+    // Runs once per mount to sync in external (localStorage) state; the
+    // provider does not remount on questionnaire swaps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [draftDismissed, setDraftDismissed] = useState(false);
   const hasResumableDraft = pendingDraft !== null && !draftDismissed;
 
@@ -141,6 +158,24 @@ export function InterviewProvider({
     draftStorage.clear();
     setDraftDismissed(true);
   }, [draftStorage]);
+
+  // Multi-tab safety, kept deliberately simple: a `storage` event for the
+  // draft key only ever fires in a tab that did *not* make the write, so
+  // any such event here means another tab has saved progress on the same
+  // interview. This just warns rather than merging state automatically —
+  // a thesis form doesn't need real-time collaboration.
+  const [otherTabHasNewerProgress, setOtherTabHasNewerProgress] =
+    useState(false);
+  useEffect(() => {
+    if (state.status === "submitted") return;
+    function handleStorage(event: StorageEvent) {
+      if (event.key === DRAFT_STORAGE_KEY && event.newValue) {
+        setOtherTabHasNewerProgress(true);
+      }
+    }
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [state.status]);
 
   const timeline = useMemo(
     () => buildTimeline(questionnaire, state.responses),
@@ -207,6 +242,7 @@ export function InterviewProvider({
       hasResumableDraft,
       resumeDraft,
       startOver,
+      otherTabHasNewerProgress,
     }),
     [
       questionnaire,
@@ -222,6 +258,7 @@ export function InterviewProvider({
       resumeDraft,
       startOver,
       interviewRepository,
+      otherTabHasNewerProgress,
     ]
   );
 

@@ -48,6 +48,12 @@ export function VoiceOrTextField({
             onStart={voice.start}
             onStop={voice.stop}
           />
+          <p className="text-xs text-muted-foreground">
+            Voice uses your browser&rsquo;s built-in speech recognition, which
+            may process audio via your browser or device vendor rather than this
+            application. Nothing is stored until you see and can edit the text
+            below.
+          </p>
         </div>
       )}
 
