@@ -54,15 +54,16 @@ test("Flow D: researcher logs in, views a session and its responses", async ({
   await expect(page.getByText("Next section")).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  // Profile layer (Q1-Q4): the server session is only created once every
-  // profile question has an answer or an explicit skip.
+  // Profile layer (Q1-Q4): every question is required, and the server
+  // session is only created once all four have an answer.
   await page
     .getByRole("checkbox", { name: "Product / Product Management" })
     .check();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("textbox", { name: "Your answer" }).fill("Retail");
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: "Skip this question" }).click();
+  await page.getByRole("radio", { name: "3-6 years" }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   const sessionCreated = page.waitForResponse(
     (response) =>
@@ -70,7 +71,8 @@ test("Flow D: researcher logs in, views a session and its responses", async ({
       response.request().method() === "POST" &&
       response.ok()
   );
-  await page.getByRole("button", { name: "Skip this question" }).click();
+  await page.locator('label:has(input[name="q4"][value="3"])').click();
+  await page.getByRole("button", { name: "Continue" }).click();
   await sessionCreated;
 
   await signInAsResearcher(page);

@@ -6,24 +6,43 @@ import {
   MessageSquareText,
   ShieldCheck,
 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 
+import { DiscoveryLineArt } from "@/components/illustration/line-art";
 import { Button } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
 import { studyContent } from "@/config/interview/study-content";
 import { useInterview } from "@/features/interview/interview-provider";
+import { motionTransitions } from "@/lib/motion";
 
 const icons = [Clock3, MessageSquareText, ShieldCheck];
 
 export function WelcomeScreen() {
   const interview = useInterview();
+  const reduceMotion = useReducedMotion();
   const { welcome } = studyContent;
 
   return (
-    <section className="mx-auto max-w-(--width-reading) py-4 sm:py-8">
-      <div className="flex flex-col gap-8">
+    <Surface className="mx-auto w-full max-w-(--width-reading) overflow-hidden">
+      <div className="relative overflow-hidden px-5 pt-6 sm:px-8 sm:pt-8">
+        <DiscoveryLineArt className="pointer-events-none absolute -top-6 -right-10 size-48 text-primary/10 sm:size-64" />
+        <div className="relative flex flex-col gap-3">
+          <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+            {welcome.eyebrow}
+          </p>
+          <h1 className="max-w-md text-2xl leading-[1.15] font-medium tracking-[-0.02em] text-balance sm:text-3xl">
+            {welcome.title}
+          </h1>
+          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+            {welcome.introduction}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-5 px-5 pt-5 pb-6 sm:px-8 sm:pb-8">
         {interview.hasResumableDraft && (
-          <Surface className="grid gap-3 p-5">
-            <h2 className="text-sm font-semibold">{welcome.resume.title}</h2>
+          <div className="grid gap-3 rounded-lg border bg-surface-subtle p-4">
+            <h2 className="text-sm font-medium">{welcome.resume.title}</h2>
             <p className="text-sm leading-relaxed text-muted-foreground">
               {welcome.resume.description}
             </p>
@@ -35,61 +54,60 @@ export function WelcomeScreen() {
                 {welcome.resume.startOverLabel}
               </Button>
             </div>
-          </Surface>
+          </div>
         )}
 
-        <div className="flex flex-col gap-4">
-          <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-            {welcome.eyebrow}
-          </p>
-          <h1 className="text-3xl leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-4xl">
-            {welcome.title}
-          </h1>
-          <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
-            {welcome.introduction}
-          </p>
-        </div>
-
-        <ul className="grid gap-3 sm:grid-cols-3">
+        <ul className="grid gap-2 sm:grid-cols-3 sm:gap-3">
           {welcome.highlights.map((highlight, index) => {
             const Icon = icons[index];
             return (
-              <li
+              <motion.li
                 key={highlight}
-                className="flex items-start gap-3 rounded-lg border bg-surface px-4 py-4 text-sm shadow-sm"
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  ...motionTransitions.base,
+                  delay: reduceMotion ? 0 : index * 0.06,
+                }}
+                className="flex items-center gap-2.5 rounded-lg bg-surface-subtle px-3 py-2.5 text-sm"
               >
                 <Icon
                   aria-hidden="true"
-                  className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                  className="size-4 shrink-0 text-muted-foreground"
                 />
                 {highlight}
-              </li>
+              </motion.li>
             );
           })}
         </ul>
 
-        <div className="grid gap-4">
-          {welcome.body.map((paragraph) => (
-            <p
-              key={paragraph}
-              className="max-w-prose text-sm leading-relaxed text-muted-foreground"
+        <details className="group rounded-lg border bg-surface open:bg-surface-subtle">
+          <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-medium select-none focus-visible:outline-3 focus-visible:outline-ring/35">
+            {welcome.moreLabel}
+            <span
+              aria-hidden="true"
+              className="text-muted-foreground transition-transform duration-(--duration-fast) group-open:rotate-180"
             >
-              {paragraph}
-            </p>
-          ))}
-        </div>
-
-        <Surface className="p-5">
-          <h2 className="text-sm font-semibold">{welcome.aims.title}</h2>
-          <ul className="mt-3 grid gap-2 text-sm leading-relaxed text-muted-foreground">
-            {welcome.aims.points.map((point) => (
-              <li key={point} className="flex gap-2">
-                <span aria-hidden="true">·</span>
-                <span>{point}</span>
-              </li>
+              ⌄
+            </span>
+          </summary>
+          <div className="grid gap-3 border-t px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+            {welcome.more.body.map((paragraph) => (
+              <p key={paragraph}>{paragraph}</p>
             ))}
-          </ul>
-        </Surface>
+            <p className="text-xs font-medium tracking-[0.08em] text-foreground/70 uppercase">
+              The study aims to understand
+            </p>
+            <ul className="grid gap-1.5">
+              {welcome.more.points.map((point) => (
+                <li key={point} className="flex gap-2">
+                  <span aria-hidden="true">·</span>
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
 
         {!interview.hasResumableDraft && (
           <div>
@@ -100,6 +118,6 @@ export function WelcomeScreen() {
           </div>
         )}
       </div>
-    </section>
+    </Surface>
   );
 }

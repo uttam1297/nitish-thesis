@@ -36,7 +36,7 @@ export function SectionTransitionScreen({
           <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
             Next section
           </p>
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance">
+          <h1 className="text-2xl font-medium tracking-[-0.02em] text-balance sm:text-3xl">
             {section.title}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">

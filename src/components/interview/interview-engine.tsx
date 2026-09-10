@@ -18,7 +18,13 @@ import {
 import { useServerSync } from "@/features/interview/use-server-sync";
 import type { Step } from "@/domain/interview/types";
 
-function StepView({ step }: { step: Step }) {
+function StepView({
+  step,
+  participantCode,
+}: {
+  step: Step;
+  participantCode: string | null;
+}) {
   switch (step.kind) {
     case "welcome":
       return <WelcomeScreen />;
@@ -31,7 +37,7 @@ function StepView({ step }: { step: Step }) {
     case "review":
       return <ReviewScreen />;
     case "complete":
-      return <CompletionScreen />;
+      return <CompletionScreen participantCode={participantCode} />;
   }
 }
 
@@ -39,7 +45,11 @@ function StepView({ step }: { step: Step }) {
 export function InterviewFlow() {
   const interview = useInterview();
   const { currentStep, progress } = interview;
-  const { status: syncStatus, resumeLink } = useServerSync(interview);
+  const {
+    status: syncStatus,
+    resumeLink,
+    participantCode,
+  } = useServerSync(interview);
 
   const showProgress =
     currentStep.kind === "question" || currentStep.kind === "section";
@@ -60,7 +70,7 @@ export function InterviewFlow() {
     >
       <AnimatePresence mode="wait" initial={false}>
         <MotionPanel key={currentStep.id} screenKey={currentStep.id}>
-          <StepView step={currentStep} />
+          <StepView step={currentStep} participantCode={participantCode} />
         </MotionPanel>
       </AnimatePresence>
     </InterviewShell>

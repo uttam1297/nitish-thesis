@@ -72,11 +72,13 @@ test("Flow C: a temporary persistence failure retains local answers and retries 
     .toBe("Retail");
 
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: "Skip this question" }).click();
+  await page.getByRole("radio", { name: "3-6 years" }).check();
   // Server sync only starts once the whole profile layer (Q1-Q4) is
-  // resolved — see use-server-sync.ts — so Q4 needs a skip too before the
-  // (forced-to-fail) session-creation attempt happens at all.
-  await page.getByRole("button", { name: "Skip this question" }).click();
+  // resolved — see use-server-sync.ts — so Q4 needs an answer too before
+  // the (forced-to-fail) session-creation attempt happens at all.
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.locator('label:has(input[name="q4"][value="3"])').click();
+  await page.getByRole("button", { name: "Continue" }).click();
 
   // The UI shows a subtle retry state, never a hard failure blocking
   // completion — then the background retry (every ~8s) succeeds once the

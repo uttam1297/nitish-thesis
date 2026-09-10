@@ -37,7 +37,7 @@ export function ReviewScreen() {
           <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
             {review.eyebrow}
           </p>
-          <h1 className="text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
+          <h1 className="text-xl font-medium tracking-[-0.015em] sm:text-2xl">
             {review.title}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">

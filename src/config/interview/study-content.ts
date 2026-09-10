@@ -9,15 +9,11 @@ export const studyContent = {
     eyebrow: "Master's thesis research · HTW Berlin",
     title: studyTitle,
     introduction:
-      "This research investigates how AI-mediated discovery — AI search, conversational assistants and AI-enabled recommendation interfaces — may affect how consumers discover, compare and evaluate B2C products and services.",
-    body: [
-      "This questionnaire is designed as an asynchronous qualitative interview. There are no correct or expected answers. I am interested in your professional experience, observations and judgment.",
-      "Where possible, please distinguish between what you have directly observed, what your organisation or industry is currently experimenting with, and what you expect may happen in the future.",
-    ],
+      "A short qualitative interview on how AI-mediated discovery is changing B2C customer acquisition — for my Master's thesis.",
     highlights: [
       "One question at a time",
-      "Type your answer, or speak it if your browser supports voice input",
-      "Your progress is saved as you go, so you can pause and resume",
+      "Type or speak your answer",
+      "Saved as you go — pause anytime",
     ],
     resume: {
       title: "You have an unfinished session",
@@ -26,13 +22,16 @@ export const studyContent = {
       continueLabel: "Continue previous session",
       startOverLabel: "Start over",
     },
-    aims: {
-      title: "The study aims to understand",
+    moreLabel: "About this study",
+    more: {
+      body: [
+        "There are no correct or expected answers — I am interested in your professional experience, observations and judgment. Where possible, distinguish between what you have directly observed, what your organisation is experimenting with, and what you expect may happen.",
+      ],
       points: [
-        "potential competitive risks for firms that do not adapt;",
-        "how practitioners and organisations are currently responding;",
-        "which strategic and organisational capabilities may become important;",
-        "and how these findings translate into an actionable framework and implementation roadmap for B2C companies.",
+        "Potential competitive risks for firms that do not adapt",
+        "How practitioners and organisations are currently responding",
+        "Which strategic and organisational capabilities may become important",
+        "How these findings translate into an actionable framework for B2C companies",
       ],
     },
     startLabel: "Begin the interview",
@@ -73,11 +72,13 @@ export const studyContent = {
     description: "You have reached the end of the interview.",
     localNotice:
       "Your responses are stored under a pseudonymous participant code, not your name, in a private research record only the researcher can access.",
+    codeLabel: "Your participant code",
+    contactLabel: "Questions about the study? Reach out anytime:",
+    contactEmail: "Nitish.Narayan@student.htw-berlin.de",
   },
 
   navigation: {
     continueLabel: "Continue",
     backLabel: "Back",
-    skipLabel: "Skip this question",
   },
 } as const;

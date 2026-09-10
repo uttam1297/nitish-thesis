@@ -44,13 +44,13 @@ describe("in-memory Phase 1 state", () => {
     expect(state.currentStepId).toBe("review");
   });
 
-  it("requires only Q1 and validates its Other field", () => {
+  it("requires every question and validates Q1's Other field", () => {
     const first = questionnaire.questions[0];
     expect(validateAnswer(first, null)).toMatch(/answer/i);
     expect(
       validateAnswer(first, { kind: "choices", values: ["__other__"] })
     ).toMatch(/Other/);
-    expect(validateAnswer(questionnaire.questions[1], null)).toBeNull();
+    expect(validateAnswer(questionnaire.questions[1], null)).toMatch(/answer/i);
   });
 
   it("finishes without persisting or submitting externally", () => {

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { QUESTIONNAIRE_VERSION } from "@/config/interview";
 import { ConsentRepository } from "@/lib/supabase/consent-repository";
 import { resetInMemoryDb } from "@/lib/supabase/in-memory-db";
 import { ParticipantRepository } from "@/lib/supabase/participant-repository";
@@ -28,7 +29,7 @@ describe("StudyRepository", () => {
   it("resolves the active questionnaire version seeded for local dev", async () => {
     const { study } = makeRepositories();
     const version = await study.getActiveQuestionnaireVersion();
-    expect(version.version).toBe("1.0.0");
+    expect(version.version).toBe(QUESTIONNAIRE_VERSION);
     expect(version.isActive).toBe(true);
   });
 });

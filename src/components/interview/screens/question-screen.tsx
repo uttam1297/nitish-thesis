@@ -50,6 +50,17 @@ export function QuestionScreen({ question }: QuestionScreenProps) {
       prompt={question.prompt}
       supportingText={question.description}
       supportingTextId={descriptionId}
+      footer={
+        <NavigationControls
+          onBack={interview.goBack}
+          onContinue={handleContinue}
+          continueLabel={
+            interview.state.returningToReview
+              ? "Save and return to review"
+              : studyContent.navigation.continueLabel
+          }
+        />
+      }
     >
       <ResponseField
         question={question}
@@ -68,18 +79,6 @@ export function QuestionScreen({ question }: QuestionScreenProps) {
           <StatusMessage variant="warning">{error}</StatusMessage>
         </div>
       )}
-
-      <NavigationControls
-        onBack={interview.goBack}
-        onContinue={handleContinue}
-        continueLabel={
-          interview.state.returningToReview
-            ? "Save and return to review"
-            : studyContent.navigation.continueLabel
-        }
-        onSkip={question.required ? undefined : () => interview.skip(question)}
-        skipLabel={studyContent.navigation.skipLabel}
-      />
     </QuestionContainer>
   );
 }

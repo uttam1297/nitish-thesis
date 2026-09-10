@@ -39,9 +39,9 @@ export const profileQuestions: InterviewQuestion[] = [
     section: "about-you",
     title: "Question 2",
     prompt: "Which industry or B2C sector do you primarily work in?",
-    required: false,
+    required: true,
     responseType: "short_text",
-    validation: { maxLength: 160 },
+    validation: { minLength: 2, maxLength: 160 },
     researchMetadata: {
       sourceRef: "Q2",
       intent: "Verbatim question from question-set.md.",
@@ -54,9 +54,15 @@ export const profileQuestions: InterviewQuestion[] = [
     title: "Question 3",
     prompt:
       "Approximately how many years of professional experience do you have in relevant digital/product/growth work?",
-    required: false,
-    responseType: "short_text",
-    validation: { maxLength: 80 },
+    required: true,
+    responseType: "single_select",
+    options: [
+      { value: "under-1", label: "Under 1 year" },
+      { value: "1-3", label: "1-3 years" },
+      { value: "3-6", label: "3-6 years" },
+      { value: "6-10", label: "6-10 years" },
+      { value: "10-plus", label: "10+ years" },
+    ],
     researchMetadata: {
       sourceRef: "Q3",
       intent: "Verbatim question from question-set.md.",
@@ -69,7 +75,7 @@ export const profileQuestions: InterviewQuestion[] = [
     title: "Question 4",
     prompt:
       "How closely does your current role relate to customer discovery or customer acquisition?",
-    required: false,
+    required: true,
     responseType: "likert_scale",
     min: 1,
     max: 5,

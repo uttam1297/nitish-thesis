@@ -9,6 +9,9 @@ interface QuestionContainerProps {
   prompt: string;
   supportingText?: string;
   supportingTextId?: string;
+  /** Navigation controls, pinned below the scrollable body so Continue is
+   * always reachable without scrolling the page. */
+  footer: ReactNode;
   children: ReactNode;
 }
 
@@ -18,16 +21,17 @@ export function QuestionContainer({
   prompt,
   supportingText,
   supportingTextId,
+  footer,
   children,
 }: QuestionContainerProps) {
   return (
-    <Surface className="mx-auto w-full max-w-(--width-reading) p-5 sm:p-8">
-      <div className="flex flex-col gap-7">
-        <div className="flex flex-col gap-3">
+    <Surface className="mx-auto flex w-full max-w-(--width-reading) flex-col overflow-hidden p-0 max-h-[min(42rem,calc(100dvh-10rem))]">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5 sm:p-7">
+        <div className="flex flex-col gap-2.5">
           <SectionHeading>{section}</SectionHeading>
           <h1
             id={headingId}
-            className="text-2xl leading-tight font-semibold tracking-[-0.025em] text-balance sm:text-3xl"
+            className="text-xl leading-snug font-medium tracking-[-0.015em] text-balance sm:text-2xl"
           >
             {prompt}
           </h1>
@@ -41,6 +45,9 @@ export function QuestionContainer({
           )}
         </div>
         {children}
+      </div>
+      <div className="shrink-0 border-t bg-surface px-5 py-4 sm:px-7">
+        {footer}
       </div>
     </Surface>
   );
