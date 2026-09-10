@@ -51,13 +51,13 @@ test("Flow C: a temporary persistence failure retains local answers and retries 
     .getByRole("checkbox", { name: "Product / Product Management" })
     .check();
   await page.getByRole("button", { name: "Continue" }).click();
-  const industryField = page.getByRole("textbox", { name: "Your answer" });
-  await industryField.fill("Retail");
+  await page.getByRole("radio", { name: "Retail / E-commerce" }).check();
 
   // The failed session-creation attempt must never destroy what the
-  // participant typed — local autosave is untouched regardless of server
-  // state. Check the local draft directly rather than navigating back
-  // through the UI, which keeps this assertion independent of screen flow.
+  // participant selected — local autosave is untouched regardless of
+  // server state. Check the local draft directly rather than navigating
+  // back through the UI, which keeps this assertion independent of screen
+  // flow.
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -66,10 +66,10 @@ test("Flow C: a temporary persistence failure retains local answers and retries 
         );
         if (!raw) return null;
         const draft = JSON.parse(raw);
-        return draft.state.responses.q2?.value?.text ?? null;
+        return draft.state.responses.q2?.value?.value ?? null;
       })
     )
-    .toBe("Retail");
+    .toBe("retail-ecommerce");
 
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("radio", { name: "3-6 years" }).check();

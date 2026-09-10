@@ -60,7 +60,7 @@ test("Flow D: researcher logs in, views a session and its responses", async ({
     .getByRole("checkbox", { name: "Product / Product Management" })
     .check();
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("textbox", { name: "Your answer" }).fill("Retail");
+  await page.getByRole("radio", { name: "Retail / E-commerce" }).check();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("radio", { name: "3-6 years" }).check();
   await page.getByRole("button", { name: "Continue" }).click();

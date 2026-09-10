@@ -17,8 +17,8 @@ export function ConsentScreen() {
   const granted = interview.state.consent.granted;
 
   return (
-    <Surface className="mx-auto flex w-full max-w-(--width-reading) flex-col overflow-hidden p-0 max-h-[min(38rem,calc(100dvh-10rem))]">
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-5 sm:p-7">
+    <Surface className="mx-auto flex w-full max-w-(--width-reading) flex-col overflow-hidden p-0 max-h-[calc(100dvh-9rem)]">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5 sm:p-7">
         <div className="flex flex-col gap-1.5">
           <p className="text-xs font-semibold tracking-[0.12em] text-muted-foreground uppercase">
             {consent.eyebrow}

@@ -20,7 +20,7 @@ async function continueSection(page: Page) {
 
 /** Every question is required, so the flow answers Q2-Q4 rather than skipping them. */
 async function answerProfileQuestions(page: Page) {
-  await page.getByRole("textbox", { name: "Your answer" }).fill("Retail");
+  await page.getByRole("radio", { name: "Retail / E-commerce" }).check();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("radio", { name: "3-6 years" }).check();
   await page.getByRole("button", { name: "Continue" }).click();
