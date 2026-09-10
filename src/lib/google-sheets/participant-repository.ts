@@ -52,6 +52,9 @@ export class ParticipantRepository {
 
   /** Full-sheet read: fine here because it is admin-only and infrequent. */
   async listAll(): Promise<ParticipantRecord[]> {
+    await this.client.ensureSheet(SHEET_NAMES.participants, [
+      ...PARTICIPANT_HEADERS,
+    ]);
     const rows = await this.client.readRange(SHEET_NAMES.participants, "A2:ZZ");
     return rows
       .filter((row) => row.some((cell) => cell !== ""))

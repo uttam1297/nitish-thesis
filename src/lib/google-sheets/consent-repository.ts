@@ -45,6 +45,7 @@ export class ConsentRepository {
   }
 
   async listBySession(sessionId: string): Promise<ConsentRecord[]> {
+    await this.client.ensureSheet(SHEET_NAMES.consent, [...CONSENT_HEADERS]);
     const rows = await this.client.readRange(SHEET_NAMES.consent, "A2:ZZ");
     return rows
       .filter((row) => row.some((cell) => cell !== ""))
