@@ -30,11 +30,35 @@ describe("createSessionRequestSchema", () => {
     ).not.toThrow();
   });
 
-  it("requires an idempotency key", () => {
+  it("tolerates a missing idempotency key rather than failing the request", () => {
+    // A client on an older cached bundle (deploy in progress, stale
+    // service worker) may not send this — it must still be able to start
+    // a session. See the field comment in api-schemas.ts.
     expect(() =>
       createSessionRequestSchema.parse({
         questionnaireVersion: "1.0.0",
         firstQuestionId: "q5",
+        profile: {
+          role: "",
+          industry: "",
+          experience: "",
+          closenessToDiscovery: "",
+        },
+        consent: {
+          consentVersion: "1.0.0",
+          participationConsent: true,
+          voiceInputConsent: false,
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects a malformed idempotency key", () => {
+    expect(() =>
+      createSessionRequestSchema.parse({
+        questionnaireVersion: "1.0.0",
+        firstQuestionId: "q5",
+        clientRequestId: "not-a-uuid",
         profile: {
           role: "",
           industry: "",
