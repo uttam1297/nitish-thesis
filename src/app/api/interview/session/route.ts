@@ -48,9 +48,14 @@ export async function POST(request: NextRequest) {
     // row set. If this exact client request already succeeded, reattach
     // to that session instead — see SessionRepository.rotateResumeToken
     // for why the returned token differs from the original attempt's.
-    const existing = await repositories.sessions.findByClientRequestId(
-      body.clientRequestId
-    );
+    // No key at all (older cached client, see the schema comment) just
+    // means this one request can't be deduplicated — fall through to a
+    // normal create rather than failing the request.
+    const existing = body.clientRequestId
+      ? await repositories.sessions.findByClientRequestId(
+          body.clientRequestId
+        )
+      : null;
     if (existing) {
       const resumeToken = await repositories.sessions.rotateResumeToken(
         existing.rowRef

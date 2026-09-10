@@ -18,8 +18,14 @@ export const createSessionRequestSchema = z.object({
    * this request, so a retry (dropped response, double-fire) can be
    * recognized as the same logical "start a session" attempt rather than
    * creating a duplicate participant/session/consent row set.
+   *
+   * Optional, deliberately: a client running an older cached bundle (a
+   * deploy in progress, a stale service worker) may not send it. Missing
+   * just means that one request can't be deduplicated — it must never
+   * turn into a hard failure that blocks the whole session-creation path.
+   * See KnownApiError handling below.
    */
-  clientRequestId: z.string().uuid(),
+  clientRequestId: z.string().uuid().optional(),
   profile: z.object({
     role: z.string().max(500),
     industry: z.string().max(500),
