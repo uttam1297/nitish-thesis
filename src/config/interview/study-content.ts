@@ -6,7 +6,7 @@ import { studyTitle } from "@/config/study";
  */
 export const studyContent = {
   welcome: {
-    eyebrow: "Master's thesis research · HTW Berlin",
+    eyebrow: "Nitish Narayan · Master's thesis research · HTW Berlin",
     title: studyTitle,
     introduction:
       "A short qualitative interview on how AI-mediated discovery is changing B2C customer acquisition — for my Master's thesis.",
@@ -34,7 +34,7 @@ export const studyContent = {
         "How these findings translate into an actionable framework for B2C companies",
       ],
     },
-    startLabel: "Begin the interview",
+    startLabel: "Get started",
   },
 
   consent: {
@@ -60,7 +60,7 @@ export const studyContent = {
     title: "Review your answers",
     introduction:
       "You do not need to read everything again. Change anything you would like to revisit, then submit.",
-    submitLabel: "Finish prototype",
+    submitLabel: "Submit",
     incompleteLabel:
       "Some required answers are still missing. Select one to complete it.",
     skippedLabel: "Skipped",

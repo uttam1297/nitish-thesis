@@ -59,6 +59,14 @@ export function InterviewFlow() {
     currentStep.kind === "review" ||
     currentStep.kind === "complete";
 
+  const questionSteps = interview.timeline.filter(
+    (s) => s.kind === "question"
+  );
+  const questionIndex =
+    currentStep.kind === "question"
+      ? questionSteps.findIndex((s) => s.id === currentStep.id) + 1
+      : undefined;
+
   return (
     <InterviewShell
       showUniversityLogo={currentStep.kind === "welcome"}
@@ -67,6 +75,8 @@ export function InterviewFlow() {
           <ProgressIndicator
             percent={progress.percent}
             section={progress.sectionTitle ?? "Interview"}
+            questionIndex={questionIndex}
+            totalQuestions={questionSteps.length}
           />
         ) : undefined
       }
