@@ -9,7 +9,7 @@ import type { Questionnaire } from "@/domain/interview/types";
  * Bump when question wording, options or routing change. Drafts saved against
  * an older version are discarded rather than silently mismatched.
  */
-export const QUESTIONNAIRE_VERSION = "1.2.0";
+export const QUESTIONNAIRE_VERSION = "1.3.0";
 
 const rawQuestionnaire = {
   version: QUESTIONNAIRE_VERSION,

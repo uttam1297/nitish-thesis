@@ -58,8 +58,6 @@ Q.7 How, if at all, does AI-mediated discovery change the role or effectiveness 
 
 Q.8 What competitive disadvantages or strategic risks, if any, could arise for a B2C company that does not adapt its customer-acquisition approach to AI-mediated discovery?
 
-Q.9 Do you think some types of B2C companies are more exposed to these risks than others? If so, what characteristics make a company more or less vulnerable?
-
 Q.10 What actions, experiments or strategic responses have you seen organizations take in response to AI-mediated customer discovery?
 
 Q.11 What actions, experiments or strategic responses have you seen organizations take in response to AI-mediated customer discovery?
@@ -75,5 +73,3 @@ Q.15 How should a company determine whether its efforts around AI-mediated disco
 Q.16 Imagine a B2C company understands that AI may change customer discovery but has done very little about it so far. What should management do first, and what should happen after that?
 
 Q.17 Do you think increasing AI mediation changes the importance of brand strength, direct customer relationships or customer retention for B2C firms? Why or why not?
-
-Q.18 What do you think B2C companies are currently most likely to underestimate about AI-mediated customer discovery over the next two to three years?

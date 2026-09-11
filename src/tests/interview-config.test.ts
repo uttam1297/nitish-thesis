@@ -23,15 +23,18 @@ describe("questionnaire configuration", () => {
     expect(questionnaire.version).toBe(QUESTIONNAIRE_VERSION);
   });
 
-  it("contains Q1-Q18 in source order", () => {
+  it("contains expected questions in source order (Q9 and Q18 removed)", () => {
+    const expectedIds = Array.from({ length: 18 }, (_, i) => `q${i + 1}`).filter(
+      (id) => id !== "q9" && id !== "q18"
+    );
     expect(questionnaire.questions.map((question) => question.id)).toEqual(
-      Array.from({ length: 18 }, (_, index) => `q${index + 1}`)
+      expectedIds
     );
   });
 
   it("uses only verbatim prompts from question-set.md", () => {
     const sourceQuestions = questionsFromMarkdown();
-    expect(sourceQuestions.size).toBe(18);
+    expect(sourceQuestions.size).toBe(16);
     for (const question of questionnaire.questions) {
       expect(question.prompt).toBe(
         sourceQuestions.get(question.researchMetadata.sourceRef)

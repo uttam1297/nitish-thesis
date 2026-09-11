@@ -17,6 +17,7 @@ import {
   buildTimeline,
   calculateProgress,
   findStep,
+  resolveStepId,
   unansweredRequiredQuestions,
   visibleQuestions,
 } from "@/domain/interview/flow";
@@ -181,7 +182,8 @@ export function InterviewProvider({
     () => buildTimeline(questionnaire, state.responses),
     [questionnaire, state.responses]
   );
-  const currentStep = findStep(timeline, state.currentStepId) ?? timeline[0];
+  const resolvedStepId = resolveStepId(timeline, state.currentStepId);
+  const currentStep = findStep(timeline, resolvedStepId) ?? timeline[0];
   const progress = useMemo(
     () =>
       calculateProgress(questionnaire, state.responses, state.currentStepId),

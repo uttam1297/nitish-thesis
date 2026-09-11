@@ -92,7 +92,7 @@ export default async function SessionDetailPage({
                   className="border-t pt-3 first:border-0 first:pt-0"
                 >
                   <p className="text-xs text-muted-foreground">
-                    {getQuestion(item.questionId)?.title ?? item.questionId}
+                    {getQuestion(item.questionId)?.title ?? `${item.questionId} (removed)`}
                   </p>
                   <p className="text-sm whitespace-pre-wrap">
                     {formatStoredValue(item.responseValue)}

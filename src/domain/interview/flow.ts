@@ -71,6 +71,27 @@ export function findStep(timeline: Step[], stepId: string): Step | undefined {
 }
 
 /**
+ * Resolves a step id that may refer to a removed question back onto the
+ * nearest valid question step, falling back to the review screen. Useful
+ * when resuming a session whose `currentQuestionId` no longer exists in
+ * the current questionnaire version.
+ */
+export function resolveStepId(timeline: Step[], stepId: string): string {
+  if (findStep(timeline, stepId)) return stepId;
+  const match = stepId.match(/^q(\d+)$/);
+  if (match) {
+    const num = Number(match[1]);
+    const questionSteps = timeline.filter((s) => s.kind === "question");
+    const nearest = questionSteps.find((s) => {
+      const m = s.id.match(/^q(\d+)$/);
+      return m && Number(m[1]) > num;
+    });
+    if (nearest) return nearest.id;
+  }
+  return REVIEW_STEP_ID;
+}
+
+/**
  * Resolves a step id that may have disappeared (its question became hidden)
  * back onto a step that still exists, preferring the nearest earlier step.
  */

@@ -75,15 +75,15 @@ test("Flow C: voice unavailable falls back to typing and still completes", async
   await answerOpenQuestions(page, 2);
 
   await continueSection(page);
-  await answerOpenQuestions(page, 2);
+  await answerOpenQuestions(page, 1);
 
   await continueSection(page);
   await answerOpenQuestions(page, 5);
 
   await continueSection(page);
-  await answerOpenQuestions(page, 4);
+  await answerOpenQuestions(page, 3);
 
-  await page.getByRole("button", { name: "Finish prototype" }).click();
+  await page.getByRole("button", { name: "Submit" }).click();
   await expect(
     page.getByRole("heading", { name: "Thank you for taking part." })
   ).toBeVisible();
