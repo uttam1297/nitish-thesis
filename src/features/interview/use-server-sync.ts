@@ -249,6 +249,9 @@ export function useServerSync(interview: InterviewContextValue) {
             resumeToken: identity.resumeToken,
           });
           setParticipantCode(result.participantCode);
+          identityRef.current = null;
+          clearSessionIdentity();
+          clearPendingSessionRequestId();
           return;
         } catch (error) {
           if (attempt === 0 && isMissingSession(error)) {

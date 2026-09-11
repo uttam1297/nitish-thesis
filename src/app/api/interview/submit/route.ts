@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { toSafeApiError } from "@/lib/supabase/api-errors";
@@ -36,6 +37,15 @@ export async function POST(request: NextRequest) {
     console.info("[interview] submission completed", {
       sessionId: session.id,
       alreadyCompleted,
+    });
+
+    const cookieStore = await cookies();
+    cookieStore.set("interview_resume_token", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
     });
 
     return NextResponse.json({
