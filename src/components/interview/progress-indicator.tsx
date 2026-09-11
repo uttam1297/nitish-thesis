@@ -1,13 +1,23 @@
-import { Progress } from "@/components/ui/progress";
-
 interface ProgressIndicatorProps {
   percent: number;
   section: string;
+  questionIndex?: number;
+  totalQuestions?: number;
 }
 
 export function ProgressIndicator({
-  percent,
   section,
+  questionIndex,
+  totalQuestions,
 }: ProgressIndicatorProps) {
-  return <Progress value={percent} label={`Current section: ${section}`} />;
+  return (
+    <div className="flex items-center justify-between gap-4 text-xs">
+      <span className="font-medium text-primary">{section}</span>
+      {questionIndex != null && totalQuestions != null && (
+        <span className="tabular-nums text-muted-foreground">
+          {questionIndex} of {totalQuestions}
+        </span>
+      )}
+    </div>
+  );
 }
