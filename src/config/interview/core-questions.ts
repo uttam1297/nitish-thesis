@@ -13,7 +13,6 @@ interface SourceQuestion {
     | "journey-evidence"
     | "ai-use-and-channels"
     | "competitive-risk"
-    | "exposure-and-consequences"
     | "organisational-response"
     | "prioritisation"
     | "capability-requirements"
@@ -60,15 +59,6 @@ const sourceQuestions: SourceQuestion[] = [
     prompt:
       "What competitive disadvantages or strategic risks, if any, could arise for a B2C company that does not adapt its customer-acquisition approach to AI-mediated discovery?",
     hint: "Think about what a company might lose — market share, visibility, customer trust — if it ignores this shift.",
-  },
-  {
-    id: "q9",
-    sourceRef: "Q9",
-    section: "risk-exposure",
-    construct: "exposure-and-consequences",
-    prompt:
-      "Do you think some types of B2C companies are more exposed to these risks than others? If so, what characteristics make a company more or less vulnerable?",
-    hint: "Consider factors like company size, industry, product type, or how digitally mature the business is.",
   },
   {
     id: "q10",
@@ -141,15 +131,6 @@ const sourceQuestions: SourceQuestion[] = [
     prompt:
       "Do you think increasing AI mediation changes the importance of brand strength, direct customer relationships or customer retention for B2C firms? Why or why not?",
     hint: "Does brand matter more or less when AI curates choices? What about loyalty and retention?",
-  },
-  {
-    id: "q18",
-    sourceRef: "Q18",
-    section: "measurement-outlook",
-    construct: "capability-requirements",
-    prompt:
-      "What do you think B2C companies are currently most likely to underestimate about AI-mediated customer discovery over the next two to three years?",
-    hint: "Think about blind spots — what's being overlooked or underestimated right now?",
   },
 ];
 

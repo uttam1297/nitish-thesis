@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { StatusMessage } from "@/components/feedback/status-message";
 import { Surface } from "@/components/ui/surface";
 import { questionnaire } from "@/config/interview";
+import { buildTimeline, resolveStepId } from "@/domain/interview/flow";
 import { createInitialState } from "@/domain/interview/reducer";
 import type { AnswerValue, InterviewState } from "@/domain/interview/types";
 import { mergeResponsesByRecency } from "@/features/interview/resume-merge";
@@ -78,7 +79,10 @@ export function ResumeClient({ token }: ResumeClientProps) {
         const state: InterviewState = {
           ...base,
           questionnaireVersion: result.session.questionnaireVersion,
-          currentStepId: result.session.currentQuestionId || base.currentStepId,
+          currentStepId: resolveStepId(
+            buildTimeline(questionnaire, mergedResponses),
+            result.session.currentQuestionId || base.currentStepId
+          ),
           responses: mergedResponses,
           consent: {
             granted: true,

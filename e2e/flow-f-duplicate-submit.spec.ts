@@ -62,11 +62,11 @@ test("Flow F: a duplicate final-submit request completes only one session", asyn
   await continueSection(page);
   await answerOpenQuestions(page, 3);
   await continueSection(page);
-  await answerOpenQuestions(page, 2);
+  await answerOpenQuestions(page, 1);
   await continueSection(page);
   await answerOpenQuestions(page, 5);
   await continueSection(page);
-  await answerOpenQuestions(page, 4);
+  await answerOpenQuestions(page, 3);
 
   await expect(
     page.getByRole("heading", { name: "Review your answers" })
@@ -76,7 +76,7 @@ test("Flow F: a duplicate final-submit request completes only one session", asyn
     (response) =>
       response.url().includes("/api/interview/submit") && response.ok()
   );
-  await page.getByRole("button", { name: "Finish prototype" }).click();
+  await page.getByRole("button", { name: "Submit" }).click();
   await submitted;
   await expect(
     page.getByRole("heading", { name: "Thank you for taking part." })
