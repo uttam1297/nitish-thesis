@@ -1,5 +1,6 @@
 .next/
 node_modules/
+supabase/.temp/
 coverage/
 playwright-report/
 test-results/

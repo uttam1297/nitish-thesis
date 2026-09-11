@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -21,6 +21,25 @@ describe("questionnaire configuration", () => {
   it("passes schema validation", () => {
     expect(() => questionnaireSchema.parse(questionnaire)).not.toThrow();
     expect(questionnaire.version).toBe(QUESTIONNAIRE_VERSION);
+  });
+
+  it("has a migration that activates the configured questionnaire version", () => {
+    const migrationDirectory = resolve(process.cwd(), "supabase/migrations");
+    const migrations = readdirSync(migrationDirectory)
+      .filter((fileName) => fileName.endsWith(".sql"))
+      .map((fileName) =>
+        readFileSync(resolve(migrationDirectory, fileName), "utf8")
+      );
+
+    expect(
+      migrations.some(
+        (migration) =>
+          migration.includes(`select id, '${QUESTIONNAIRE_VERSION}',`) &&
+          migration.includes(
+            "on conflict (study_id, version) do update set is_active = true"
+          )
+      )
+    ).toBe(true);
   });
 
   it("contains expected questions in source order (Q9 and Q18 removed)", () => {
