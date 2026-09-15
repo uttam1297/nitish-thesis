@@ -1,0 +1,49 @@
+:root {
+  color-scheme: light;
+  font-family:
+    Arial, Helvetica, sans-serif;
+  background: #f5f6f8;
+  color: #172033;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.dashboard-foundation {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem;
+}
+
+.dashboard-foundation section {
+  width: min(100%, 40rem);
+  padding: 2rem;
+  border: 1px solid #d9dee8;
+  border-radius: 0.75rem;
+  background: #ffffff;
+}
+
+.dashboard-foundation h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.1;
+}
+
+.dashboard-foundation p {
+  margin: 0.5rem 0 0;
+  line-height: 1.6;
+}
+
+.eyebrow {
+  color: #59657a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
