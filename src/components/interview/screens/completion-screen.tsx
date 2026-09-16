@@ -3,14 +3,20 @@
 import { motion, useReducedMotion } from "motion/react";
 
 import { CompletionLineArt } from "@/components/illustration/line-art";
+import { StatusMessage } from "@/components/feedback/status-message";
 import { studyContent } from "@/config/interview/study-content";
 import { motionTransitions } from "@/lib/motion";
 
 interface CompletionScreenProps {
   participantCode: string | null;
+  /** True when answers are still only on this device. */
+  unsynced?: boolean;
 }
 
-export function CompletionScreen({ participantCode }: CompletionScreenProps) {
+export function CompletionScreen({
+  participantCode,
+  unsynced = false,
+}: CompletionScreenProps) {
   const reduceMotion = useReducedMotion();
   const { completion } = studyContent;
 
@@ -69,6 +75,18 @@ export function CompletionScreen({ participantCode }: CompletionScreenProps) {
             {completion.description}
           </p>
         </motion.div>
+
+        {unsynced && !participantCode && (
+          <div className="w-full text-left">
+            <StatusMessage variant="warning">
+              <strong className="font-medium">
+                {completion.unsyncedTitle}
+              </strong>
+              <br />
+              {completion.unsyncedBody}
+            </StatusMessage>
+          </div>
+        )}
 
         {participantCode && (
           <motion.div

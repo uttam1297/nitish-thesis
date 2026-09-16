@@ -25,9 +25,11 @@ import { draftStorage } from "@/lib/persistence/draft-storage";
 function StepView({
   step,
   participantCode,
+  syncFailed,
 }: {
   step: Step;
   participantCode: string | null;
+  syncFailed: boolean;
 }) {
   switch (step.kind) {
     case "welcome":
@@ -41,7 +43,12 @@ function StepView({
     case "review":
       return <ReviewScreen />;
     case "complete":
-      return <CompletionScreen participantCode={participantCode} />;
+      return (
+        <CompletionScreen
+          participantCode={participantCode}
+          unsynced={syncFailed}
+        />
+      );
   }
 }
 
@@ -95,7 +102,11 @@ export function InterviewFlow() {
     >
       <AnimatePresence mode="wait" initial={false}>
         <MotionPanel key={currentStep.id} screenKey={currentStep.id}>
-          <StepView step={currentStep} participantCode={participantCode} />
+          <StepView
+            step={currentStep}
+            participantCode={participantCode}
+            syncFailed={syncStatus === "error"}
+          />
         </MotionPanel>
       </AnimatePresence>
     </InterviewShell>

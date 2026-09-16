@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase/api-schemas";
 import { CONSENT_VERSION } from "@/config/study";
 import { createRepositories } from "@/lib/supabase/repositories";
+import { resolveQuestionnaireVersion } from "@/lib/supabase/questionnaire-version";
 
 export const dynamic = "force-dynamic";
 
@@ -31,16 +32,10 @@ export async function POST(request: NextRequest) {
     const body = createSessionRequestSchema.parse(await request.json());
     const repositories = createRepositories();
 
-    // Never trust a client-supplied questionnaire version: it must match
-    // an active version this server actually serves.
-    const questionnaireVersion =
-      await repositories.study.getActiveQuestionnaireVersion();
-    if (body.questionnaireVersion !== questionnaireVersion.version) {
-      throw new KnownApiError(
-        409,
-        "Your session was started under an outdated version of this study. Please reload the page."
-      );
-    }
+    const questionnaireVersion = await resolveQuestionnaireVersion(
+      repositories,
+      body.questionnaireVersion
+    );
 
     const participant = await repositories.participants.create(body.profile);
     const { session, resumeToken } = await repositories.sessions.create({
