@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { QUESTIONNAIRE_VERSION } from "@/config/interview";
 import { ConsentRepository } from "@/lib/supabase/consent-repository";
-import { resetInMemoryDb } from "@/lib/supabase/in-memory-db";
+import { getInMemoryDb, resetInMemoryDb } from "@/lib/supabase/in-memory-db";
 import { ParticipantRepository } from "@/lib/supabase/participant-repository";
 import { ResponseRepository } from "@/lib/supabase/response-repository";
 import { responseRecordSchema } from "@/lib/supabase/records";
@@ -31,6 +31,53 @@ describe("StudyRepository", () => {
     const version = await study.getActiveQuestionnaireVersion();
     expect(version.version).toBe(QUESTIONNAIRE_VERSION);
     expect(version.isActive).toBe(true);
+  });
+
+  it("provisions the configured version when its row is missing", async () => {
+    const db = getInMemoryDb();
+    // Reproduces a deploy whose questionnaire migration was never run:
+    // the database only knows an older version.
+    db.questionnaireVersions = [
+      {
+        ...db.questionnaireVersions[0],
+        version: "1.3.0",
+        isActive: true,
+      },
+    ];
+
+    const { study } = makeRepositories();
+    const version = await study.getActiveQuestionnaireVersion();
+
+    expect(version.version).toBe(QUESTIONNAIRE_VERSION);
+    expect(version.isActive).toBe(true);
+    // The superseded row survives: sessions already pinned to it must
+    // still resolve.
+    expect(
+      db.questionnaireVersions.find((item) => item.version === "1.3.0")
+    ).toBeDefined();
+  });
+
+  it("reactivates the configured version instead of duplicating it", async () => {
+    const db = getInMemoryDb();
+    db.questionnaireVersions[0].isActive = false;
+
+    const { study } = makeRepositories();
+    const version = await study.getActiveQuestionnaireVersion();
+
+    expect(version.isActive).toBe(true);
+    expect(
+      db.questionnaireVersions.filter(
+        (item) => item.version === QUESTIONNAIRE_VERSION
+      )
+    ).toHaveLength(1);
+  });
+
+  it("looks up a superseded version without provisioning one", async () => {
+    const { study } = makeRepositories();
+    expect(await study.findByVersion("1.0.0")).toBeNull();
+    expect((await study.findByVersion(QUESTIONNAIRE_VERSION))?.version).toBe(
+      QUESTIONNAIRE_VERSION
+    );
   });
 });
 

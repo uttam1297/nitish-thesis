@@ -73,6 +73,9 @@ export const studyContent = {
     localNotice:
       "Your responses are stored under a pseudonymous participant code, not your name, in a private research record only the researcher can access.",
     codeLabel: "Your participant code",
+    unsyncedTitle: "Your answers have not reached the researcher yet",
+    unsyncedBody:
+      "They are saved safely in this browser and will be sent automatically the next time you open this page on this device. Please do not clear your browser data. If this message keeps appearing, contact the researcher below.",
     contactLabel: "Questions about the study? Reach out anytime:",
     contactEmail: "Nitish.Narayan@student.htw-berlin.de",
   },
