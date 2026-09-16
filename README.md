@@ -30,6 +30,23 @@ The browser never talks to the database directly. The service-role key
 Every Supabase-specific server file lives under `src/lib/supabase/` and is
 marked `import "server-only"`.
 
+### Independent thesis data dashboard
+
+Steps 2–5 add a second Next.js application under `dashboard/`. It is a
+read-only research observatory with its own Vercel project and URL. It
+shares the Supabase data model but has no runtime dependency on the
+participant interview application.
+
+```text
+Participant interview → writes → Supabase ← reads ← thesis dashboard
+```
+
+The dashboard defaults to main-study data, keeps pilot data explicitly
+selectable, applies the exact engineering-only Q7 denominator, and uses
+approximately 30-minute server-side caching. Public narrative display and
+raw JSON are both disabled by default. See `dashboard/README.md` for routes,
+configuration, privacy decisions, deployment details, and limitations.
+
 Question wording and Q1 options are sourced exclusively from
 `question-set.md`. The duplicated wording of Q10 and Q11 is intentionally
 preserved because it is present in the source file.
