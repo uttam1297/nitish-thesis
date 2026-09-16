@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import { BarChart } from "@/components/charts";
 import { MetricCard } from "@/components/data-display";
-import { FilterBar } from "@/components/filter-bar";
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import { getQuestion } from "@/lib/research-metadata";
 import { categoricalDistribution } from "@/lib/research/analytics";
@@ -64,7 +63,6 @@ export default async function QuestionDetailPage({
           questionnaire and remain part of the dataset.
         </p>
       )}
-      <FilterBar filters={filters} />
       <section className="card-grid">
         <MetricCard
           label="People asked"

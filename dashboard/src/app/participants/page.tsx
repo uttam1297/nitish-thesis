@@ -57,7 +57,7 @@ export default async function ParticipantsPage({
             questionnaire completeness.
           </p>
         </div>
-        <strong>{participants.length} matching</strong>
+        <span className="record-count">{participants.length} participants</span>
       </header>
       <ParticipantFilters
         filters={filters}

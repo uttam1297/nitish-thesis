@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { FilterBar } from "@/components/filter-bar";
 import { getDashboardData } from "@/lib/research/dashboard-data";
 import {
   applyParticipantFilters,
@@ -60,9 +59,8 @@ export default async function QuestionsPage({
             questionnaire item.
           </p>
         </div>
-        <strong>{questions.length} questions</strong>
+        <span className="record-count">{questions.length} questions</span>
       </header>
-      <FilterBar filters={filters} />
       <form className="filter-bar" method="get">
         <label>
           Construct
@@ -95,7 +93,7 @@ export default async function QuestionsPage({
           </select>
         </label>
         <button className="button" type="submit">
-          Apply question filters
+          Apply filters
         </button>
       </form>
       <p className="definition">
@@ -113,9 +111,8 @@ export default async function QuestionsPage({
             label: question.questionId.toUpperCase(),
             done: question.responseCount + question.notApplicableCount,
             total: question.expectedParticipantCount,
-            note: question.retired
-              ? `Retired — no longer asked. ${question.wording}`
-              : question.wording,
+            title: question.wording,
+            note: question.retired ? "Retired — no longer asked" : undefined,
           }))}
           caption="Hover a bar for the exact count; hover a label for the full question wording."
           empty="No questions match these filters."
@@ -147,7 +144,9 @@ export default async function QuestionsPage({
                     {question.questionId}
                   </Link>
                 </td>
-                <td>{question.wording}</td>
+                <td>
+                  <span className="question-wording">{question.wording}</span>
+                </td>
                 <td>{humanize(question.construct)}</td>
                 <td>{humanize(question.responseType)}</td>
                 <td>
