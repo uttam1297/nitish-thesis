@@ -122,9 +122,9 @@ export function TrendChart({
         role="img"
         viewBox={`0 0 ${width} ${height}`}
       >
-        <title>
-          {series.map((item) => item.name).join(", ")} over time, running totals
-        </title>
+        <title>{`${series
+          .map((item) => item.name)
+          .join(", ")} over time, running totals`}</title>
         {ticks.map((value) => (
           <g key={value}>
             <line
@@ -198,8 +198,10 @@ export type CompletionRow = Readonly<{
   label: string;
   done: number;
   total: number;
-  /** Shown under the label, e.g. a session status or a question wording. */
+  /** Visible under the row — keep it short; it is read at a glance. */
   note?: string;
+  /** Hover text for the label, for detail that would crowd the chart. */
+  title?: string;
 }>;
 
 /**
@@ -225,7 +227,10 @@ export function CompletionChart({
           const share = row.total ? row.done / row.total : 0;
           return (
             <li key={row.label}>
-              <span className="chart-bar-label" title={row.note ?? row.label}>
+              <span
+                className="chart-bar-label"
+                title={row.title ?? row.note ?? row.label}
+              >
                 {row.label}
               </span>
               <span

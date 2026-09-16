@@ -14,9 +14,11 @@ import { formatTimestamp } from "@/lib/research/format";
 
 export const dynamic = "force-dynamic";
 
-const PARTICIPANT_COLOUR = "#215c51";
-const RESPONSE_COLOUR = "#c07c2c";
-const COMPLETION_COLOUR = "#2f6f9f";
+// Violet ramp for the primary series, with two distinguishable companions
+// that stay legible next to it and in greyscale.
+const PARTICIPANT_COLOUR = "#6d28d9";
+const RESPONSE_COLOUR = "#a78bfa";
+const COMPLETION_COLOUR = "#15803d";
 
 export default async function OverviewPage({
   searchParams,

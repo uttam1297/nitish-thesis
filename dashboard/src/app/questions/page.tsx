@@ -111,9 +111,8 @@ export default async function QuestionsPage({
             label: question.questionId.toUpperCase(),
             done: question.responseCount + question.notApplicableCount,
             total: question.expectedParticipantCount,
-            note: question.retired
-              ? `Retired — no longer asked. ${question.wording}`
-              : question.wording,
+            title: question.wording,
+            note: question.retired ? "Retired — no longer asked" : undefined,
           }))}
           caption="Hover a bar for the exact count; hover a label for the full question wording."
           empty="No questions match these filters."
