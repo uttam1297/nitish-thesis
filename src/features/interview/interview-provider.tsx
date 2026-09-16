@@ -68,6 +68,12 @@ export interface InterviewContextValue {
   hasResumableDraft: boolean;
   resumeDraft: () => void;
   startOver: () => void;
+  /**
+   * Increments every time the participant starts over. Server sync watches
+   * it to detach from the session the abandoned draft belonged to: the next
+   * answers belong to a new participant, not to the previous one.
+   */
+  startOverCount: number;
   /** True once another browser tab has saved progress on this interview. */
   otherTabHasNewerProgress: boolean;
 }
@@ -157,9 +163,11 @@ export function InterviewProvider({
     setDraftDismissed(true);
   }, [pendingDraft]);
 
+  const [startOverCount, setStartOverCount] = useState(0);
   const startOver = useCallback(() => {
     draftStorage.clear();
     setDraftDismissed(true);
+    setStartOverCount((count) => count + 1);
     onStartOver?.();
   }, [draftStorage, onStartOver]);
 
@@ -247,6 +255,7 @@ export function InterviewProvider({
       hasResumableDraft,
       resumeDraft,
       startOver,
+      startOverCount,
       otherTabHasNewerProgress,
     }),
     [
@@ -262,6 +271,7 @@ export function InterviewProvider({
       hasResumableDraft,
       resumeDraft,
       startOver,
+      startOverCount,
       interviewRepository,
       otherTabHasNewerProgress,
     ]
