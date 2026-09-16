@@ -4,7 +4,8 @@
 --   * Q11 is retired. The source question document repeated Q10's prompt
 --     verbatim as Q11, so the two could never be told apart in analysis.
 --   * Q16 is retired: dropped from the study.
---   * Voice input is switched off; answers are typed.
+--   * Voice input stays available beside typing; it is transcribed in the
+--     participant's browser, so no audio reaches this database.
 --
 -- Responses already recorded for q11 and q16 are deliberately left in place.
 -- They belong to sessions pinned to 1.3.0/1.4.0, where those questions were
