@@ -11,6 +11,7 @@ import {
   buildQuestionSummaries,
   buildQuestionViewModels,
 } from "@/lib/research/view-models";
+import { MetricCard } from "@/components/data-display";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,12 @@ export default async function QuestionsPage({
         </div>
         <span className="record-count">{questions.length} questions</span>
       </header>
+      <section className="explorer-summary" aria-label="Question coverage summary">
+        <MetricCard label="Active questions" value={questions.filter((item) => !item.retired).length} />
+        <MetricCard label="Retired questions" value={questions.filter((item) => item.retired).length} detail="Historical evidence retained" />
+        <MetricCard label="Average coverage" value={formatPercent(questions.length ? questions.reduce((sum, item) => sum + item.coverage, 0) / questions.length : 0)} />
+        <MetricCard label="Below 80% coverage" value={questions.filter((item) => item.coverage < .8).length} />
+      </section>
       <form className="filter-bar" method="get">
         <label>
           Construct
@@ -118,7 +125,7 @@ export default async function QuestionsPage({
           empty="No questions match these filters."
         />
       </div>
-      <div className="table-wrap">
+      <div className="table-wrap research-table">
         <table>
           <caption>Questions in questionnaire order</caption>
           <thead>
@@ -161,7 +168,7 @@ export default async function QuestionsPage({
                 <td>{question.responseCount}</td>
                 <td>{question.notApplicableCount}</td>
                 <td>{question.missingCount}</td>
-                <td>{formatPercent(question.coverage)}</td>
+                <td><span className="table-progress"><i style={{ width: `${question.coverage * 100}%` }} /><b>{formatPercent(question.coverage)}</b></span></td>
               </tr>
             ))}
           </tbody>

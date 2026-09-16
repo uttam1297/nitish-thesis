@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LockKeyhole } from "lucide-react";
 
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import { getDashboardData } from "@/lib/research/dashboard-data";
@@ -119,11 +120,11 @@ export default async function ResponsesPage({
       </form>
       {!config.showNarratives && (
         <p className="definition">
-          Narrative display is disabled. Verbatim text is removed from the
+          Qualitative response content is protected. Verbatim text is removed from the
           server-rendered public projection, not merely hidden visually.
         </p>
       )}
-      <div className="table-wrap">
+      <div className="table-wrap research-table response-table">
         <table>
           <caption>Question response records</caption>
           <thead>
@@ -158,8 +159,8 @@ export default async function ResponsesPage({
                   <br />
                   <span className="muted">{humanize(row.responseType)}</span>
                 </td>
-                <td>
-                  {row.readableAnswer}
+                <td className={`answer-cell ${row.answerState.toLowerCase()}`}>
+                  {row.responseType === "voice_or_text" && row.answerState === "ANSWERED" && !config.showNarratives ? <span className="protected-answer"><LockKeyhole size={14} />Protected qualitative response</span> : row.readableAnswer}
                   {row.rawValue !== undefined && (
                     <details>
                       <summary>Raw JSON</summary>

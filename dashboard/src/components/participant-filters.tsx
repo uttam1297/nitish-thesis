@@ -1,4 +1,5 @@
 import type { DashboardFilters } from "@/lib/research/filters";
+import Link from "next/link";
 
 export type RoleOption = Readonly<{ value: string; label: string }>;
 
@@ -21,6 +22,7 @@ export function ParticipantFilters({
   experiences: readonly string[];
 }) {
   return (
+    <>
     <form className="filter-bar" method="get">
       <label>
         Participant code
@@ -86,5 +88,13 @@ export function ParticipantFilters({
         Apply filters
       </button>
     </form>
+    {Object.entries(filters).filter(([, value]) => value && value !== "all").length > 0 && (
+      <div className="active-filters" aria-label="Active filters">
+        <span>Active filters</span>
+        {Object.entries(filters).filter(([, value]) => value && value !== "all").map(([key, value]) => <span className="filter-chip" key={key}>{key}: {value}</span>)}
+        <Link href="/participants">Clear all</Link>
+      </div>
+    )}
+    </>
   );
 }
