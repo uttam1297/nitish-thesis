@@ -20,10 +20,10 @@ describe("read-only research repository", () => {
 
     expect(from).toHaveBeenCalledWith("sessions");
     expect(select).toHaveBeenCalledWith(
-      expect.not.stringContaining("resume_token_hash"),
+      expect.not.stringContaining("resume_token_hash")
     );
     expect(select).toHaveBeenCalledWith(
-      expect.not.stringContaining("client_request_id"),
+      expect.not.stringContaining("client_request_id")
     );
   });
 
@@ -31,15 +31,18 @@ describe("read-only research repository", () => {
     const empty = clientWith({ data: [], error: null });
     await expect(listSessions(empty.client as never)).resolves.toEqual([]);
 
-    const failed = clientWith({ data: null, error: { message: "secret details" } });
+    const failed = clientWith({
+      data: null,
+      error: { message: "secret details" },
+    });
     await expect(listSessions(failed.client as never)).rejects.toEqual(
       expect.objectContaining({
         name: "DashboardDataError",
         message: "Research data is temporarily unavailable.",
-      }),
+      })
     );
     await expect(listSessions(failed.client as never)).rejects.toBeInstanceOf(
-      DashboardDataError,
+      DashboardDataError
     );
   });
 
@@ -47,7 +50,7 @@ describe("read-only research repository", () => {
     const { client, select } = clientWith({ data: [], error: null });
     await listResponses(client as never);
     expect(select).toHaveBeenCalledWith(
-      expect.not.stringContaining("optional_elaboration"),
+      expect.not.stringContaining("optional_elaboration")
     );
   });
 });

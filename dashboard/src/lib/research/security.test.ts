@@ -5,7 +5,10 @@ import { buildPublicResponseRows } from "./privacy";
 
 describe("public dashboard safety boundaries", () => {
   it("contains no database mutation calls in the production dashboard source", () => {
-    const repository = readFileSync(new URL("../supabase/repository.ts", import.meta.url), "utf8");
+    const repository = readFileSync(
+      new URL("../supabase/repository.ts", import.meta.url),
+      "utf8"
+    );
     for (const operation of ["insert", "update", "upsert", "delete", "rpc"]) {
       expect(repository).not.toContain(`.${operation}(`);
     }

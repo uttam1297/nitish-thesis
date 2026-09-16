@@ -9,6 +9,8 @@ describe("research presentation formatting", () => {
   });
 
   it("displays timestamps in Europe/Berlin without changing storage", () => {
-    expect(formatTimestamp("2026-09-16T08:00:00.000Z", "Europe/Berlin")).toContain("10:00");
+    expect(
+      formatTimestamp("2026-09-16T08:00:00.000Z", "Europe/Berlin")
+    ).toContain("10:00");
   });
 });

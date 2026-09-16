@@ -13,11 +13,11 @@ export const questionnaireRegistry = {
 } as const satisfies Record<QuestionnaireVersion, QuestionnaireMetadata>;
 
 export const supportedQuestionnaireVersions = Object.freeze(
-  Object.keys(questionnaireRegistry) as QuestionnaireVersion[],
+  Object.keys(questionnaireRegistry) as QuestionnaireVersion[]
 );
 
 export function isSupportedQuestionnaireVersion(
-  version: string,
+  version: string
 ): version is QuestionnaireVersion {
   return Object.hasOwn(questionnaireRegistry, version);
 }
@@ -32,10 +32,10 @@ export function getQuestionnaire(version: string): QuestionnaireMetadata {
 
 export function getQuestion(
   version: string,
-  questionId: string,
+  questionId: string
 ): QuestionMetadata | undefined {
   return getQuestionnaire(version).questions.find(
-    (question) => question.id === questionId,
+    (question) => question.id === questionId
   );
 }
 
@@ -45,10 +45,10 @@ export function getQuestionIds(version: string): readonly CurrentQuestionId[] {
 
 export function getResearchConstruct(
   version: string,
-  constructId: string,
+  constructId: string
 ): ResearchConstructMetadata | undefined {
   return getQuestionnaire(version).constructs.find(
-    (construct) => construct.id === constructId,
+    (construct) => construct.id === constructId
   );
 }
 
@@ -59,13 +59,13 @@ export type ExpectedQuestionContext = Readonly<{
 
 export function isQuestionExpected(
   questionId: string,
-  context: ExpectedQuestionContext,
+  context: ExpectedQuestionContext
 ): boolean {
   const question = getQuestion(context.questionnaireVersion, questionId);
 
   if (!question) {
     throw new Error(
-      `Unknown question "${questionId}" for questionnaire version ${context.questionnaireVersion}.`,
+      `Unknown question "${questionId}" for questionnaire version ${context.questionnaireVersion}.`
     );
   }
 
@@ -81,9 +81,9 @@ export function isQuestionExpected(
 }
 
 export function getExpectedQuestionIds(
-  context: ExpectedQuestionContext,
+  context: ExpectedQuestionContext
 ): readonly CurrentQuestionId[] {
   return getQuestionIds(context.questionnaireVersion).filter((questionId) =>
-    isQuestionExpected(questionId, context),
+    isQuestionExpected(questionId, context)
   );
 }

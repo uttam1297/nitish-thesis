@@ -4,9 +4,7 @@ const DEFAULT_REVALIDATE_SECONDS = 1800;
 const MINIMUM_REVALIDATE_SECONDS = 60;
 const DEFAULT_TIMEZONE = "Europe/Berlin";
 
-type DashboardEnvironment = Readonly<
-  Record<string, string | undefined>
->;
+type DashboardEnvironment = Readonly<Record<string, string | undefined>>;
 
 export type DashboardConfig = Readonly<{
   revalidateSeconds: number;
@@ -23,7 +21,7 @@ export type DashboardDatabaseConfig = Readonly<{
 function parseBoolean(
   value: string | undefined,
   variableName: string,
-  defaultValue: boolean,
+  defaultValue: boolean
 ): boolean {
   if (value === undefined || value === "") {
     return defaultValue;
@@ -47,7 +45,7 @@ function parseRevalidateSeconds(value: string | undefined): number {
 
   if (!/^\d+$/.test(value)) {
     throw new Error(
-      `DASHBOARD_REVALIDATE_SECONDS must be an integer greater than or equal to ${MINIMUM_REVALIDATE_SECONDS}.`,
+      `DASHBOARD_REVALIDATE_SECONDS must be an integer greater than or equal to ${MINIMUM_REVALIDATE_SECONDS}.`
     );
   }
 
@@ -55,7 +53,7 @@ function parseRevalidateSeconds(value: string | undefined): number {
 
   if (!Number.isSafeInteger(seconds) || seconds < MINIMUM_REVALIDATE_SECONDS) {
     throw new Error(
-      `DASHBOARD_REVALIDATE_SECONDS must be an integer greater than or equal to ${MINIMUM_REVALIDATE_SECONDS}.`,
+      `DASHBOARD_REVALIDATE_SECONDS must be an integer greater than or equal to ${MINIMUM_REVALIDATE_SECONDS}.`
     );
   }
 
@@ -69,7 +67,7 @@ function parseTimezone(value: string | undefined): string {
     new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
   } catch {
     throw new Error(
-      `DASHBOARD_TIMEZONE must be a timezone recognised by the JavaScript runtime. Received "${timezone}".`,
+      `DASHBOARD_TIMEZONE must be a timezone recognised by the JavaScript runtime. Received "${timezone}".`
     );
   }
 
@@ -79,7 +77,7 @@ function parseTimezone(value: string | undefined): string {
 function requireSupabaseUrl(value: string | undefined): string {
   if (!value?.trim()) {
     throw new Error(
-      "DASHBOARD_SUPABASE_URL is required when database configuration is requested.",
+      "DASHBOARD_SUPABASE_URL is required when database configuration is requested."
     );
   }
 
@@ -91,7 +89,7 @@ function requireSupabaseUrl(value: string | undefined): string {
     }
   } catch {
     throw new Error(
-      "DASHBOARD_SUPABASE_URL must be a valid HTTP or HTTPS URL.",
+      "DASHBOARD_SUPABASE_URL must be a valid HTTP or HTTPS URL."
     );
   }
 
@@ -101,7 +99,7 @@ function requireSupabaseUrl(value: string | undefined): string {
 function requireServiceRoleKey(value: string | undefined): string {
   if (!value?.trim()) {
     throw new Error(
-      "DASHBOARD_SUPABASE_SERVICE_ROLE_KEY is required when database configuration is requested.",
+      "DASHBOARD_SUPABASE_SERVICE_ROLE_KEY is required when database configuration is requested."
     );
   }
 
@@ -109,33 +107,33 @@ function requireServiceRoleKey(value: string | undefined): string {
 }
 
 export function getDashboardConfig(
-  environment: DashboardEnvironment = process.env,
+  environment: DashboardEnvironment = process.env
 ): DashboardConfig {
   return {
     revalidateSeconds: parseRevalidateSeconds(
-      environment.DASHBOARD_REVALIDATE_SECONDS,
+      environment.DASHBOARD_REVALIDATE_SECONDS
     ),
     showNarratives: parseBoolean(
       environment.DASHBOARD_SHOW_NARRATIVES,
       "DASHBOARD_SHOW_NARRATIVES",
-      false,
+      false
     ),
     showRawJson: parseBoolean(
       environment.DASHBOARD_SHOW_RAW_JSON,
       "DASHBOARD_SHOW_RAW_JSON",
-      false,
+      false
     ),
     timezone: parseTimezone(environment.DASHBOARD_TIMEZONE),
   };
 }
 
 export function getDashboardDatabaseConfig(
-  environment: DashboardEnvironment = process.env,
+  environment: DashboardEnvironment = process.env
 ): DashboardDatabaseConfig {
   return {
     supabaseUrl: requireSupabaseUrl(environment.DASHBOARD_SUPABASE_URL),
     supabaseServiceRoleKey: requireServiceRoleKey(
-      environment.DASHBOARD_SUPABASE_SERVICE_ROLE_KEY,
+      environment.DASHBOARD_SUPABASE_SERVICE_ROLE_KEY
     ),
   };
 }

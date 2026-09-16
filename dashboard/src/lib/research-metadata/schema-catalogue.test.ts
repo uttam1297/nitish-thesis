@@ -25,7 +25,14 @@ describe("static schema catalogue", () => {
     ["studies", ["id", "slug", "title", "is_active", "created_at"]],
     [
       "questionnaire_versions",
-      ["id", "study_id", "version", "consent_version", "is_active", "created_at"],
+      [
+        "id",
+        "study_id",
+        "version",
+        "consent_version",
+        "is_active",
+        "created_at",
+      ],
     ],
     [
       "participants",
@@ -90,7 +97,7 @@ describe("static schema catalogue", () => {
     ],
   ] as const)("covers every %s field in migration order", (table, fields) => {
     expect(getTableMetadata(table).fields.map((field) => field.name)).toEqual(
-      fields,
+      fields
     );
   });
 
@@ -104,11 +111,11 @@ describe("static schema catalogue", () => {
       nullable: true,
     });
     expect(getFieldMetadata("sessions", "study_stage")?.default).toBe(
-      "'pilot'",
+      "'pilot'"
     );
-    expect(getFieldMetadata("participants", "participant_code")?.default).toContain(
-      "participant_code_seq",
-    );
+    expect(
+      getFieldMetadata("participants", "participant_code")?.default
+    ).toContain("participant_code_seq");
   });
 
   it("marks credential derivatives, idempotency keys, and UUIDs as never public", () => {
@@ -135,8 +142,8 @@ describe("static schema catalogue", () => {
     });
     expect(
       getTableMetadata("sessions").checkConstraints.map(
-        (constraint) => constraint.expression,
-      ),
+        (constraint) => constraint.expression
+      )
     ).toContain("study_stage IN ('pilot', 'main')");
   });
 });
@@ -145,7 +152,7 @@ describe("relationship catalogue", () => {
   it("contains all seven migration-enforced foreign keys", () => {
     expect(databaseRelationships).toHaveLength(7);
     expect(
-      databaseRelationships.map((relationship) => relationship.technicalLabel),
+      databaseRelationships.map((relationship) => relationship.technicalLabel)
     ).toEqual([
       "questionnaire_versions.study_id → studies.id",
       "sessions.participant_id → participants.id",
@@ -157,16 +164,16 @@ describe("relationship catalogue", () => {
     ]);
     expect(
       databaseRelationships.every(
-        (relationship) => relationship.enforcement === "database-foreign-key",
-      ),
+        (relationship) => relationship.enforcement === "database-foreign-key"
+      )
     ).toBe(true);
   });
 
   it("finds both incoming and outgoing relationships for a table", () => {
     expect(
       getRelationshipsForTable("participants").map(
-        (relationship) => relationship.id,
-      ),
+        (relationship) => relationship.id
+      )
     ).toEqual([
       "session-participant",
       "response-participant",
@@ -179,11 +186,11 @@ describe("relationship catalogue", () => {
     expect(
       logicalRelationships.every(
         (relationship) =>
-          relationship.enforcement === "logical-application-expectation",
-      ),
+          relationship.enforcement === "logical-application-expectation"
+      )
     ).toBe(true);
-    expect(logicalRelationships.map((relationship) => relationship.id)).toContain(
-      "profile-response-mirrors",
-    );
+    expect(
+      logicalRelationships.map((relationship) => relationship.id)
+    ).toContain("profile-response-mirrors");
   });
 });

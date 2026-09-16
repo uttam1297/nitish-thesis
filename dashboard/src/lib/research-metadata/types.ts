@@ -38,10 +38,7 @@ export type InterviewSectionId =
   | "measurement-outlook";
 
 export type QuestionResponseType =
-  | "multi_select"
-  | "single_select"
-  | "likert_scale"
-  | "voice_or_text";
+  "multi_select" | "single_select" | "likert_scale" | "voice_or_text";
 
 export type AnswerShapeMetadata =
   | Readonly<{

@@ -51,7 +51,7 @@ describe("questionnaire 1.3.0 catalogue", () => {
 
   it("marks every current question as required", () => {
     expect(
-      questionnaireV130.questions.every((question) => question.required),
+      questionnaireV130.questions.every((question) => question.required)
     ).toBe(true);
   });
 
@@ -186,7 +186,7 @@ describe("version-aware registry", () => {
 
   it("rejects unknown versions instead of silently falling back", () => {
     expect(() => getQuestionnaire("1.2.0")).toThrow(
-      "Unsupported questionnaire version: 1.2.0",
+      "Unsupported questionnaire version: 1.2.0"
     );
   });
 });
@@ -216,7 +216,7 @@ describe("research constructs", () => {
     expect(getQuestion(version, "q14")?.construct).toBe("governance");
     expect(getQuestion(version, "q15")?.construct).toBe("measurement");
     expect(getQuestion(version, "q17")?.construct).toBe(
-      "capability-requirements",
+      "capability-requirements"
     );
   });
 });

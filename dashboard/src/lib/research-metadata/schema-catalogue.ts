@@ -9,7 +9,7 @@ import type {
 const internalId = (
   name: string,
   meaning: string,
-  source?: string,
+  source?: string
 ): FieldMetadata => ({
   name,
   type: "uuid",
@@ -82,10 +82,7 @@ const tableCatalogue = [
     primaryKey: "id",
     fields: [
       {
-        ...internalId(
-          "id",
-          "Primary identifier referenced by sessions.",
-        ),
+        ...internalId("id", "Primary identifier referenced by sessions."),
         default: "gen_random_uuid()",
       },
       internalId("study_id", "Study that owns this questionnaire version."),
@@ -153,8 +150,7 @@ const tableCatalogue = [
         name: "participant_code",
         type: "text",
         nullable: false,
-        default:
-          "'P' || lpad(nextval('participant_code_seq')::text, 3, '0')",
+        default: "'P' || lpad(nextval('participant_code_seq')::text, 3, '0')",
         source: "Database sequence",
         meaning: "Pseudonymous human-facing research label such as P007.",
         visibility: "Directly Visible",
@@ -243,7 +239,7 @@ const tableCatalogue = [
       internalId("participant_id", "Participant who owns this session."),
       internalId(
         "questionnaire_version_id",
-        "Questionnaire-version row used by this session.",
+        "Questionnaire-version row used by this session."
       ),
       {
         name: "questionnaire_version",
@@ -263,7 +259,9 @@ const tableCatalogue = [
         visibility: "Technical/Internal Only",
         publicVisibility: "never",
         securityClassification: "credential-derivative",
-        caveats: ["Never display, log, export, or treat this as research data."],
+        caveats: [
+          "Never display, log, export, or treat this as research data.",
+        ],
       },
       {
         name: "response_mode",
@@ -377,8 +375,7 @@ const tableCatalogue = [
     checkConstraints: [
       {
         fields: ["response_mode"],
-        expression:
-          "response_mode IN ('asynchronous_form', 'live_interview')",
+        expression: "response_mode IN ('asynchronous_form', 'live_interview')",
         meaning: "Only supported collection modes may be stored.",
       },
       {
@@ -458,12 +455,13 @@ const tableCatalogue = [
         type: "jsonb",
         nullable: false,
         source: "Serialized questionnaire AnswerValue",
-        meaning: "Canonical raw answer with a shape determined by response_type.",
+        meaning:
+          "Canonical raw answer with a shape determined by response_type.",
         visibility: "Visible Through Drill-Down",
         publicVisibility: "dashboard-only",
         caveats: [
           "Narrative text may contain sensitive verbatim research responses.",
-          "A withdrawn response is the JSON string \"[WITHDRAWN]\".",
+          'A withdrawn response is the JSON string "[WITHDRAWN]".',
         ],
       },
       {
@@ -505,7 +503,8 @@ const tableCatalogue = [
         fields: ["response_type"],
         expression:
           "response_type IN ('single_select', 'multi_select', 'likert_scale', 'ranking', 'short_text', 'long_text', 'voice_or_text', 'optional_elaboration')",
-        meaning: "Only response types supported by the interview engine may be stored.",
+        meaning:
+          "Only response types supported by the interview engine may be stored.",
       },
     ],
     caveats: [
@@ -622,7 +621,8 @@ export const databaseRelationships = [
     targetTable: "sessions",
     targetField: "id",
     technicalLabel: "responses.session_id → sessions.id",
-    explanation: "This connects each response to the session that collected it.",
+    explanation:
+      "This connects each response to the session that collected it.",
   },
   {
     id: "response-participant",
@@ -653,7 +653,8 @@ export const databaseRelationships = [
     targetTable: "participants",
     targetField: "id",
     technicalLabel: "consents.participant_id → participants.id",
-    explanation: "This connects each consent event to the participant who gave it.",
+    explanation:
+      "This connects each consent event to the participant who gave it.",
   },
 ] as const satisfies readonly DatabaseRelationshipMetadata[];
 
@@ -662,8 +663,10 @@ export const logicalRelationships = [
     id: "session-version-copy",
     enforcement: "logical-application-expectation",
     source: "sessions.questionnaire_version",
-    expectedAgreement: "questionnaire_versions.version via questionnaire_version_id",
-    explanation: "The denormalized version string should match its referenced row.",
+    expectedAgreement:
+      "questionnaire_versions.version via questionnaire_version_id",
+    explanation:
+      "The denormalized version string should match its referenced row.",
   },
   {
     id: "response-session-participant",
@@ -678,7 +681,8 @@ export const logicalRelationships = [
     enforcement: "logical-application-expectation",
     source: "responses.question_id",
     expectedAgreement: "a configured question ID for the session version",
-    explanation: "The database stores text and does not enforce catalogue membership.",
+    explanation:
+      "The database stores text and does not enforce catalogue membership.",
   },
   {
     id: "response-construct",
@@ -734,19 +738,19 @@ export function getTableMetadata(tableName: ResearchTableName): TableMetadata {
 
 export function getFieldMetadata(
   tableName: ResearchTableName,
-  fieldName: string,
+  fieldName: string
 ): FieldMetadata | undefined {
   return getTableMetadata(tableName).fields.find(
-    (field) => field.name === fieldName,
+    (field) => field.name === fieldName
   );
 }
 
 export function getRelationshipsForTable(
-  tableName: ResearchTableName,
+  tableName: ResearchTableName
 ): readonly DatabaseRelationshipMetadata[] {
   return databaseRelationships.filter(
     (relationship) =>
       relationship.sourceTable === tableName ||
-      relationship.targetTable === tableName,
+      relationship.targetTable === tableName
   );
 }

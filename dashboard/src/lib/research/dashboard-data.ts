@@ -5,14 +5,17 @@ import { unstable_cache } from "next/cache";
 import { getDashboardConfig } from "../config/dashboard-config";
 import { getResearchDataSnapshot } from "../supabase/repository";
 import { calculateDatasetMetrics, runIntegrityChecks } from "./analytics";
-import { buildParticipantViewModels, buildQuestionViewModels } from "./view-models";
+import {
+  buildParticipantViewModels,
+  buildQuestionViewModels,
+} from "./view-models";
 
 const { revalidateSeconds } = getDashboardConfig();
 
 const readCachedSnapshot = unstable_cache(
   getResearchDataSnapshot,
   ["thesis-dashboard-research-snapshot-v1"],
-  { revalidate: revalidateSeconds, tags: ["thesis-dashboard-research-data"] },
+  { revalidate: revalidateSeconds, tags: ["thesis-dashboard-research-data"] }
 );
 
 export async function getDashboardData() {

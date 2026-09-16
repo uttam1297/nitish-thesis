@@ -7,12 +7,7 @@ export type ResearchTableName =
   | "consents";
 
 export type DatabaseFieldType =
-  | "uuid"
-  | "text"
-  | "boolean"
-  | "integer"
-  | "timestamptz"
-  | "jsonb";
+  "uuid" | "text" | "boolean" | "integer" | "timestamptz" | "jsonb";
 
 export type FieldVisibility =
   | "Directly Visible"
@@ -23,9 +18,7 @@ export type FieldVisibility =
 export type PublicVisibility = "dashboard-only" | "never";
 
 export type SecurityClassification =
-  | "internal-identifier"
-  | "credential-derivative"
-  | "operational-sensitive";
+  "internal-identifier" | "credential-derivative" | "operational-sensitive";
 
 export type FieldMetadata = Readonly<{
   name: string;

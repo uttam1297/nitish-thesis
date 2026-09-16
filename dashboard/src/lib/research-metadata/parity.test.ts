@@ -45,7 +45,7 @@ const repositoryRoot = resolve(process.cwd(), "..");
 
 function loadStaticTypeScriptExport<T>(
   relativePath: string,
-  exportName: string,
+  exportName: string
 ): T {
   const source = readFileSync(resolve(repositoryRoot, relativePath), "utf8");
   const outputText = transpileModule(source, {
@@ -95,30 +95,34 @@ describe("authoritative interview-source parity", () => {
     "%s has been reviewed against the dashboard catalogue",
     (relativePath, expectedFingerprint) => {
       const source = readFileSync(resolve(repositoryRoot, relativePath));
-      const actualFingerprint = createHash("sha256").update(source).digest("hex");
+      const actualFingerprint = createHash("sha256")
+        .update(source)
+        .digest("hex");
 
       expect(actualFingerprint).toBe(expectedFingerprint);
-    },
+    }
   );
 
   it("matches every authoritative question field copied into the dashboard", () => {
     const authoritativeQuestions = [
       ...loadStaticTypeScriptExport<AuthoritativeQuestion[]>(
         "src/config/interview/profile-questions.ts",
-        "profileQuestions",
+        "profileQuestions"
       ),
       ...loadStaticTypeScriptExport<AuthoritativeQuestion[]>(
         "src/config/interview/core-questions.ts",
-        "coreQuestions",
+        "coreQuestions"
       ),
     ];
 
-    expect(authoritativeQuestions).toHaveLength(questionnaireV130.questions.length);
+    expect(authoritativeQuestions).toHaveLength(
+      questionnaireV130.questions.length
+    );
 
     for (const authoritative of authoritativeQuestions) {
       const dashboard: QuestionMetadata | undefined =
         questionnaireV130.questions.find(
-          (question) => question.id === authoritative.id,
+          (question) => question.id === authoritative.id
         );
 
       expect(dashboard, authoritative.id).toBeDefined();
@@ -142,7 +146,7 @@ describe("authoritative interview-source parity", () => {
         expect(dashboard.options).toEqual(authoritative.options);
         expect(dashboard.otherOption.enabled).toBe(authoritative.allowOther);
         expect(dashboard.validation.minimumSelections).toBe(
-          authoritative.validation?.minSelections,
+          authoritative.validation?.minSelections
         );
       }
 
@@ -152,7 +156,7 @@ describe("authoritative interview-source parity", () => {
       ) {
         expect(dashboard.options).toEqual(authoritative.options);
         expect(Boolean(dashboard.otherOption)).toBe(
-          Boolean(authoritative.allowOther),
+          Boolean(authoritative.allowOther)
         );
       }
 
@@ -177,7 +181,7 @@ describe("authoritative interview-source parity", () => {
           text: authoritative.allowText,
         });
         expect(dashboard.validation.minimumNonWhitespaceCharacters).toBe(
-          authoritative.validation?.minLength,
+          authoritative.validation?.minLength
         );
         expect(
           dashboard.visibility
@@ -188,7 +192,7 @@ describe("authoritative interview-source parity", () => {
                   value: dashboard.visibility.value,
                 },
               ]
-            : undefined,
+            : undefined
         ).toEqual(authoritative.visibleWhen);
       }
     }
@@ -205,11 +209,9 @@ describe("authoritative interview-source parity", () => {
   it("matches the active questionnaire version constant", () => {
     const source = readFileSync(
       resolve(repositoryRoot, "src/config/interview/index.ts"),
-      "utf8",
+      "utf8"
     );
-    const versionMatch = source.match(
-      /QUESTIONNAIRE_VERSION\s*=\s*"([^"]+)"/,
-    );
+    const versionMatch = source.match(/QUESTIONNAIRE_VERSION\s*=\s*"([^"]+)"/);
 
     expect(versionMatch?.[1]).toBe(questionnaireV130.version);
   });
