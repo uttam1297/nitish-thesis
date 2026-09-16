@@ -1,4 +1,16 @@
+"use client";
+
 import { formatPercent } from "@/lib/research/format";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 /**
  * Charts are plain server-rendered SVG: no chart library, no client
@@ -71,6 +83,46 @@ export type TrendSeries = Readonly<{
 }>;
 
 /**
+ * Daily collection events, intentionally kept on separate scales. A single
+ * cumulative response line makes a burst of answers visually drown out the
+ * much smaller (but equally important) participant and completion events.
+ */
+export function CollectionCadence({
+  points,
+}: {
+  points: readonly Readonly<{
+    date: string;
+    participants: number;
+    responses: number;
+    completions: number;
+  }>[];
+}) {
+  if (!points.length) return <p className="empty">No collection activity recorded yet.</p>;
+  const tracks = [
+    { label: "Participants started", key: "participants" as const, tone: "participant" },
+    { label: "Interviews completed", key: "completions" as const, tone: "completion" },
+    { label: "Responses saved", key: "responses" as const, tone: "response" },
+  ];
+  return <figure className="cadence-chart">
+    <div className="cadence-axis" aria-hidden="true">{points.map((point) => <span key={point.date}>{point.date.slice(5)}</span>)}</div>
+    {tracks.map((track) => {
+      const max = Math.max(...points.map((point) => point[track.key]), 1);
+      const total = points.reduce((sum, point) => sum + point[track.key], 0);
+      return <div className="cadence-track" key={track.key}>
+        <div className="cadence-label"><span className={`cadence-dot ${track.tone}`} />{track.label}<strong>{total}</strong></div>
+        <div className="cadence-bars">
+          {points.map((point) => <span className="cadence-day" key={point.date} title={`${track.label}: ${point[track.key]} on ${point.date}`}>
+            <i className={track.tone} style={{ height: `${Math.max(point[track.key] ? 8 : 2, point[track.key] / max * 100)}%` }} />
+            <b>{point[track.key]}</b>
+          </span>)}
+        </div>
+      </div>;
+    })}
+    <figcaption className="muted small">Each track uses its own scale. Read the numbers within a track to see collection activity by date; do not compare bar heights across tracks.</figcaption>
+  </figure>;
+}
+
+/**
  * Cumulative totals over time. A line chart is the right shape here because
  * the x axis is a real date sequence and the running total only ever rises —
  * the slope is the thing worth reading, not the individual day.
@@ -91,104 +143,25 @@ export function TrendChart({
   ].sort();
   if (dates.length === 0) return <p className="empty">{empty}</p>;
 
-  const width = 720;
-  const height = 260;
-  const padding = { top: 16, right: 16, bottom: 44, left: 48 };
-  const plotWidth = width - padding.left - padding.right;
-  const plotHeight = height - padding.top - padding.bottom;
-  const maxValue = Math.max(
-    ...series.flatMap((item) => item.points.map((point) => point.value)),
-    1
-  );
-
-  const x = (date: string) =>
-    dates.length === 1
-      ? padding.left + plotWidth / 2
-      : padding.left + (dates.indexOf(date) / (dates.length - 1)) * plotWidth;
-  const y = (value: number) =>
-    padding.top + plotHeight - (value / maxValue) * plotHeight;
-
-  const gridValues = [0, 0.25, 0.5, 0.75, 1].map((step) =>
-    Math.round(maxValue * step)
-  );
-  // A short collection window should not repeat the same rounded tick.
-  const ticks = [...new Set(gridValues)];
+  const data = dates.map((date) => Object.fromEntries([
+    ["date", date],
+    ...series.map((item) => [item.name, item.points.find((point) => point.date === date)?.value ?? 0]),
+  ]));
 
   return (
     <figure className="chart">
-      <svg
-        className="chart-svg"
-        preserveAspectRatio="xMidYMid meet"
-        role="img"
-        viewBox={`0 0 ${width} ${height}`}
-      >
-        <title>{`${series
-          .map((item) => item.name)
-          .join(", ")} over time, running totals`}</title>
-        {ticks.map((value) => (
-          <g key={value}>
-            <line
-              className="chart-grid"
-              x1={padding.left}
-              x2={width - padding.right}
-              y1={y(value)}
-              y2={y(value)}
-            />
-            <text className="chart-tick" x={padding.left - 10} y={y(value) + 4}>
-              {value}
-            </text>
-          </g>
-        ))}
-        {dates.map((date) => (
-          <text
-            className="chart-tick"
-            key={date}
-            textAnchor="middle"
-            x={x(date)}
-            y={height - padding.bottom + 20}
-          >
-            {date.slice(5)}
-          </text>
-        ))}
-        {series.map((item) => (
-          <g key={item.name}>
-            <polyline
-              fill="none"
-              points={item.points
-                .map((point) => `${x(point.date)},${y(point.value)}`)
-                .join(" ")}
-              stroke={item.colour}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2.5}
-            />
-            {item.points.map((point) => (
-              <circle
-                cx={x(point.date)}
-                cy={y(point.value)}
-                fill={item.colour}
-                key={`${item.name}-${point.date}`}
-                r={4}
-              >
-                <title>{`${item.name} — ${point.date}: ${point.value}`}</title>
-              </circle>
-            ))}
-          </g>
-        ))}
-      </svg>
-      <ul className="chart-legend">
-        {series.map((item) => (
-          <li key={item.name}>
-            <span
-              className="chart-swatch"
-              style={{ background: item.colour }}
-              aria-hidden="true"
-            />
-            {item.name}
-            <strong> {item.points.at(-1)?.value ?? 0}</strong>
-          </li>
-        ))}
-      </ul>
+      <div className="trend-chart" role="img" aria-label={`${series.map((item) => item.name).join(", ")} running totals over the collection period`}>
+        <ResponsiveContainer width="100%" height={270}>
+          <LineChart data={data} margin={{ top: 12, right: 8, bottom: 2, left: -22 }}>
+            <CartesianGrid stroke="#e7e8eb" vertical={false} />
+            <XAxis dataKey="date" tickFormatter={(date) => String(date).slice(5)} tickLine={false} axisLine={false} fontSize={11} />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} fontSize={11} />
+            <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e7e8eb", boxShadow: "0 8px 20px rgb(20 25 30 / 12%)" }} labelFormatter={(date) => `Date: ${date}`} />
+            <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+            {series.map((item) => <Line key={item.name} type="linear" dataKey={item.name} stroke={item.colour} strokeWidth={2.25} dot={{ r: 3 }} activeDot={{ r: 5 }} />)}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
       {caption && <figcaption className="muted small">{caption}</figcaption>}
     </figure>
   );
