@@ -128,15 +128,17 @@ export function buildParticipantViewModels(snapshot: ResearchDataSnapshot): Part
     });
     const answered = responseModels.filter((response) => response.state === "ANSWERED" && expectedIds.has(response.question.id));
     const q1 = responseModels.find((response) => response.question.id === "q1")?.answer;
+    const readableProfile = (questionId: "q2" | "q3" | "q4", fallback: string) =>
+      responseModels.find((response) => response.question.id === questionId)?.readableAnswer ?? fallback;
     const roles = q1?.kind === "choices" ? q1.values : [];
     const expectedCount = session.status === "withdrawn" ? 0 : expectedIds.size;
 
     return [{
       participantCode: participant.participant_code,
       roles,
-      industry: participant.industry,
-      experience: participant.experience,
-      discoveryCloseness: participant.closeness_to_discovery,
+      industry: readableProfile("q2", participant.industry),
+      experience: readableProfile("q3", participant.experience),
+      discoveryCloseness: readableProfile("q4", participant.closeness_to_discovery),
       status: session.status,
       studyStage: session.study_stage,
       responseMode: session.response_mode,
