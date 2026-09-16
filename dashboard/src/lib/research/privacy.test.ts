@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { getQuestion } from "../research-metadata";
-import { buildPublicResponseRows } from "./privacy";
+import { buildPublicResponseRows, displayAnswer } from "./privacy";
 import type { ParticipantViewModel } from "./view-models";
 
 const secretNarrative = "private verbatim participant narrative";
@@ -63,5 +63,47 @@ describe("public response projection", () => {
     );
     expect(enabled).toContain(secretNarrative);
     expect(enabled).toContain("rawValue");
+  });
+});
+
+describe("displayAnswer", () => {
+  const withResponse = (
+    response: ParticipantViewModel["responses"][number]
+  ): ParticipantViewModel => ({ ...participant, responses: [response] });
+
+  const notApplicable = {
+    question: getQuestion("1.5.0", "q14")!,
+    state: "NOT_APPLICABLE",
+    readableAnswer: "Not applicable to participant experience",
+    answer: { kind: "not_applicable", reason: "not_applicable" },
+  } as const;
+
+  it("reports a not-applicable answer as the choice the participant made", () => {
+    expect(displayAnswer(notApplicable, { showNarratives: true })).toBe(
+      "Not applicable to participant experience"
+    );
+  });
+
+  it("keeps showing it when narratives are hidden — it carries no free text", () => {
+    expect(displayAnswer(notApplicable, { showNarratives: false })).toBe(
+      "Not applicable to participant experience"
+    );
+    const [row] = buildPublicResponseRows([withResponse(notApplicable)], {
+      showNarratives: false,
+      showRawJson: false,
+    });
+    expect(row.readableAnswer).toBe("Not applicable to participant experience");
+    expect(row.readableAnswer).not.toBe("Unexpected stored response");
+  });
+
+  it("names each unresolved state instead of calling it unexpected", () => {
+    const states = ["MISSING", "NOT_EXPECTED", "WITHDRAWN"] as const;
+    for (const state of states) {
+      const text = displayAnswer(
+        { ...notApplicable, state, readableAnswer: null, answer: null },
+        { showNarratives: true }
+      );
+      expect(text).not.toBe("Unexpected stored response");
+    }
   });
 });
