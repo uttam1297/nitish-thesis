@@ -53,6 +53,26 @@ describe("Phase 1 interview flow", () => {
     ).toHaveLength(15);
   });
 
+  it("treats an explicit not-applicable narrative as resolved", () => {
+    const responses: ResponseMap = {
+      ...firstAnswer,
+      q5: {
+        questionId: "q5",
+        value: { kind: "not_applicable", reason: "not_applicable" },
+        method: "selected",
+        skipped: false,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    };
+
+    expect(calculateProgress(questionnaire, responses, "q6").resolved).toBe(2);
+    expect(
+      unansweredRequiredQuestions(questionnaire, responses).map(
+        (question) => question.id
+      )
+    ).not.toContain("q5");
+  });
+
   it("removes a conditionally hidden question from the timeline and progress total", () => {
     const engineeringOnly: ResponseMap = {
       q1: {

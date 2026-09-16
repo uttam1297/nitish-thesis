@@ -42,7 +42,7 @@ export default async function OverviewPage({
           </p>
         </div>
         <p className="muted small">
-          Questionnaire 1.3.0
+          Questionnaires 1.3.0 and 1.4.0
           <br />
           Last refreshed {formatTimestamp(data.snapshot.refreshedAt, timezone)}
         </p>

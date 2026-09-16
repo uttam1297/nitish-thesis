@@ -45,12 +45,18 @@ export function isAnswered(response: QuestionResponse | undefined): boolean {
       return Number.isFinite(value.value);
     case "text":
       return value.text.trim().length > 0;
+    case "not_applicable":
+      return false;
   }
 }
 
 /** True when the participant has either answered or deliberately skipped. */
 export function isResolved(response: QuestionResponse | undefined): boolean {
-  return Boolean(response?.skipped) || isAnswered(response);
+  return (
+    Boolean(response?.skipped) ||
+    response?.value?.kind === "not_applicable" ||
+    isAnswered(response)
+  );
 }
 
 /**
@@ -61,6 +67,13 @@ export function validateAnswer(
   question: InterviewQuestion,
   value: AnswerValue | null
 ): string | null {
+  if (value?.kind === "not_applicable") {
+    return question.responseType === "voice_or_text" &&
+      question.allowNotApplicable
+      ? null
+      : "Please provide an answer before continuing.";
+  }
+
   const answered = isAnswered({
     questionId: question.id,
     value,

@@ -3,7 +3,11 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { QUESTIONNAIRE_VERSION, questionnaire } from "@/config/interview";
+import {
+  QUESTIONNAIRE_VERSION,
+  questionnaire,
+  questionnaireV130,
+} from "@/config/interview";
 import { questionnaireSchema } from "@/domain/interview/schema";
 
 function questionsFromMarkdown(): Map<string, string> {
@@ -43,12 +47,27 @@ describe("questionnaire configuration", () => {
   });
 
   it("contains expected questions in source order (Q9 and Q18 removed)", () => {
-    const expectedIds = Array.from({ length: 18 }, (_, i) => `q${i + 1}`).filter(
-      (id) => id !== "q9" && id !== "q18"
-    );
+    const expectedIds = Array.from(
+      { length: 18 },
+      (_, i) => `q${i + 1}`
+    ).filter((id) => id !== "q9" && id !== "q18");
     expect(questionnaire.questions.map((question) => question.id)).toEqual(
       expectedIds
     );
+  });
+
+  it("adds not-applicable only to 1.4 narrative questions", () => {
+    const previous = questionnaireV130.questions.filter(
+      (question) => question.responseType === "voice_or_text"
+    );
+    const current = questionnaire.questions.filter(
+      (question) => question.responseType === "voice_or_text"
+    );
+
+    expect(previous.every((question) => !question.allowNotApplicable)).toBe(
+      true
+    );
+    expect(current.every((question) => question.allowNotApplicable)).toBe(true);
   });
 
   it("uses only verbatim prompts from question-set.md", () => {

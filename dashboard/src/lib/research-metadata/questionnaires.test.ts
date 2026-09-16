@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { questionnaireV130, researchConstructs } from "./questionnaire-v1-3-0";
+import { questionnaireV140 } from "./questionnaire-v1-4-0";
 import {
   getExpectedQuestionIds,
   getQuestion,
@@ -179,9 +180,10 @@ describe("Q7 expected-question routing", () => {
 });
 
 describe("version-aware registry", () => {
-  it("advertises only metadata version 1.3.0", () => {
-    expect(supportedQuestionnaireVersions).toEqual(["1.3.0"]);
+  it("advertises both preserved and current metadata versions", () => {
+    expect(supportedQuestionnaireVersions).toEqual(["1.3.0", "1.4.0"]);
     expect(getQuestionnaire("1.3.0")).toBe(questionnaireV130);
+    expect(getQuestionnaire("1.4.0")).toBe(questionnaireV140);
   });
 
   it("rejects unknown versions instead of silently falling back", () => {

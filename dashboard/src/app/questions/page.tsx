@@ -111,16 +111,19 @@ export default async function QuestionsPage({
               <th>Conditional</th>
               <th>Expected</th>
               <th>Stored</th>
+              <th>Not applicable</th>
               <th>Missing</th>
               <th>Coverage</th>
             </tr>
           </thead>
           <tbody>
             {questions.map((question) => (
-              <tr key={question.questionId}>
+              <tr
+                key={`${question.questionnaireVersion}:${question.questionId}`}
+              >
                 <td>
                   <Link
-                    href={`/questions/${question.questionId}?stage=${filters.stage}&mode=${filters.mode}&version=${filters.version}`}
+                    href={`/questions/${question.questionId}?stage=${filters.stage}&mode=${filters.mode}&version=${question.questionnaireVersion}`}
                   >
                     {question.questionId}
                   </Link>
@@ -128,10 +131,11 @@ export default async function QuestionsPage({
                 <td>{question.wording}</td>
                 <td>{humanize(question.construct)}</td>
                 <td>{humanize(question.responseType)}</td>
-                <td>1.3.0</td>
+                <td>{question.questionnaireVersion}</td>
                 <td>{question.conditional ? "Yes" : "No"}</td>
                 <td>{question.expectedParticipantCount}</td>
                 <td>{question.responseCount}</td>
+                <td>{question.notApplicableCount}</td>
                 <td>{question.missingCount}</td>
                 <td>{formatPercent(question.coverage)}</td>
               </tr>

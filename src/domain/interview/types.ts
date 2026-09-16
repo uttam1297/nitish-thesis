@@ -115,6 +115,8 @@ export interface VoiceOrTextQuestion extends QuestionBase {
   placeholder?: string;
   allowVoice: boolean;
   allowText: boolean;
+  /** Lets a participant resolve the question without supplying research text. */
+  allowNotApplicable?: boolean;
   validation?: TextValidation;
 }
 
@@ -147,7 +149,8 @@ export type AnswerValue =
   | { kind: "choices"; values: string[]; otherText?: string }
   | { kind: "scale"; value: number }
   | { kind: "ranking"; order: string[] }
-  | { kind: "text"; text: string };
+  | { kind: "text"; text: string }
+  | { kind: "not_applicable"; reason: "not_applicable" };
 
 export type AnswerKind = AnswerValue["kind"];
 
@@ -159,7 +162,7 @@ export interface AnswerKindByResponseType {
   ranking: "ranking";
   short_text: "text";
   long_text: "text";
-  voice_or_text: "text";
+  voice_or_text: "text" | "not_applicable";
   optional_elaboration: "text";
 }
 

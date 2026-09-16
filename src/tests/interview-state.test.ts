@@ -61,6 +61,24 @@ describe("in-memory Phase 1 state", () => {
     expect(validateAnswer(questionnaire.questions[1], null)).toMatch(/answer/i);
   });
 
+  it("accepts not-applicable only for enabled 1.4 narrative questions", () => {
+    const q5 = questionnaire.questions.find(
+      (question) => question.id === "q5"
+    )!;
+    expect(
+      validateAnswer(q5, {
+        kind: "not_applicable",
+        reason: "not_applicable",
+      })
+    ).toBeNull();
+    expect(
+      validateAnswer(questionnaire.questions[0], {
+        kind: "not_applicable",
+        reason: "not_applicable",
+      })
+    ).toMatch(/answer/i);
+  });
+
   it("finishes without persisting or submitting externally", () => {
     const state = reduce(createInitialState(questionnaire), { type: "submit" });
     expect(state.status).toBe("submitted");

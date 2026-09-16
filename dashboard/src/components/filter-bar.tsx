@@ -34,6 +34,7 @@ export function FilterBar({
         <select name="version" defaultValue={filters.version}>
           <option value="all">All versions</option>
           <option value="1.3.0">1.3.0</option>
+          <option value="1.4.0">1.4.0</option>
         </select>
       </label>
       <label>

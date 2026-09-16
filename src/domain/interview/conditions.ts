@@ -16,6 +16,8 @@ function valuesOf(response: ResponseMap[string] | undefined): string[] {
       return value.order;
     case "text":
       return [value.text];
+    case "not_applicable":
+      return [];
   }
 }
 

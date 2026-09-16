@@ -81,8 +81,14 @@ export function ReviewScreen() {
                 <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-semibold focus-visible:outline-3 focus-visible:outline-ring/35">
                   {section.title}
                   <span className="text-xs font-medium text-muted-foreground">
-                    {items.filter((item) => item.state === "answered").length}{" "}
-                    of {items.length} answered
+                    {
+                      items.filter(
+                        (item) =>
+                          item.state === "answered" ||
+                          item.state === "not_applicable"
+                      ).length
+                    }{" "}
+                    of {items.length} resolved
                   </span>
                 </summary>
                 <ul className="grid gap-2 border-t p-3">
@@ -131,7 +137,11 @@ function ReviewRow({
 }) {
   const { review } = studyContent;
   const fallback =
-    item.state === "skipped" ? review.skippedLabel : review.unansweredLabel;
+    item.state === "not_applicable"
+      ? "Not applicable to my experience"
+      : item.state === "skipped"
+        ? review.skippedLabel
+        : review.unansweredLabel;
 
   return (
     <li className="rounded-md border bg-surface p-3">

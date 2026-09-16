@@ -134,38 +134,46 @@ const sourceQuestions: SourceQuestion[] = [
   },
 ];
 
-export const coreQuestions: InterviewQuestion[] = sourceQuestions.map(
-  ({ id, sourceRef, section, construct, prompt, hint }) => ({
-    id,
-    section,
-    construct,
-    title: `Question ${sourceRef.slice(1)}`,
-    prompt,
-    description: hint,
-    required: true,
-    responseType: "voice_or_text",
-    allowVoice: true,
-    allowText: true,
-    validation: { minLength: 20 },
-    researchMetadata: {
-      sourceRef,
-      intent: "Verbatim question from question-set.md.",
-    },
-    // Q7 asks about the effectiveness of hands-on acquisition channels. A
-    // participant whose Q1 answer is "Engineering / Technology" only has no
-    // direct channel exposure to report on, so the question adapts the path
-    // by stepping aside rather than forcing an answer the construct doesn't
-    // need from them; every other participant still sees it.
-    ...(id === "q7"
-      ? {
-          visibleWhen: [
-            {
-              questionId: "q1",
-              operator: "notEquals" as const,
-              value: "engineering",
-            },
-          ],
-        }
-      : {}),
-  })
-);
+export function buildCoreQuestions(
+  allowNotApplicable = false
+): InterviewQuestion[] {
+  return sourceQuestions.map(
+    ({ id, sourceRef, section, construct, prompt, hint }) => ({
+      id,
+      section,
+      construct,
+      title: `Question ${sourceRef.slice(1)}`,
+      prompt,
+      description: hint,
+      required: true,
+      responseType: "voice_or_text",
+      allowVoice: true,
+      allowText: true,
+      ...(allowNotApplicable ? { allowNotApplicable: true } : {}),
+      validation: { minLength: 20 },
+      researchMetadata: {
+        sourceRef,
+        intent: "Verbatim question from question-set.md.",
+      },
+      // Q7 asks about the effectiveness of hands-on acquisition channels. A
+      // participant whose Q1 answer is "Engineering / Technology" only has no
+      // direct channel exposure to report on, so the question adapts the path
+      // by stepping aside rather than forcing an answer the construct doesn't
+      // need from them; every other participant still sees it.
+      ...(id === "q7"
+        ? {
+            visibleWhen: [
+              {
+                questionId: "q1",
+                operator: "notEquals" as const,
+                value: "engineering",
+              },
+            ],
+          }
+        : {}),
+    })
+  );
+}
+
+/** Historical 1.3 question set retained for existing sessions. */
+export const coreQuestions = buildCoreQuestions(false);

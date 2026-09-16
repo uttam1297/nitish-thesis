@@ -2,6 +2,7 @@ import {
   getExpectedQuestionIds,
   getQuestion,
   getQuestionnaire,
+  supportedQuestionnaireVersions,
   type ChoicesAnswer,
   type CurrentQuestionId,
   type QuestionMetadata,
@@ -20,7 +21,12 @@ import {
 } from "./answers";
 
 export type AnswerState =
-  "ANSWERED" | "MISSING" | "NOT_EXPECTED" | "WITHDRAWN" | "UNEXPECTED";
+  | "ANSWERED"
+  | "NOT_APPLICABLE"
+  | "MISSING"
+  | "NOT_EXPECTED"
+  | "WITHDRAWN"
+  | "UNEXPECTED";
 
 export type ResponseViewModel = Readonly<{
   question: QuestionMetadata;
@@ -56,6 +62,7 @@ export type ParticipantViewModel = Readonly<{
 }>;
 
 export type QuestionViewModel = Readonly<{
+  questionnaireVersion: string;
   questionId: string;
   wording: string;
   hint?: string;
@@ -64,6 +71,7 @@ export type QuestionViewModel = Readonly<{
   conditional: boolean;
   expectedParticipantCount: number;
   responseCount: number;
+  notApplicableCount: number;
   missingCount: number;
   coverage: number;
   responses: readonly Readonly<{
@@ -158,7 +166,10 @@ export function buildParticipantViewModels(
         }
         return {
           question,
-          state: "ANSWERED",
+          state:
+            validation.answer.kind === "not_applicable"
+              ? "NOT_APPLICABLE"
+              : "ANSWERED",
           readableAnswer: answerToReadable(validation.answer, question),
           answer: validation.answer,
           createdAt: row.created_at,
@@ -166,9 +177,11 @@ export function buildParticipantViewModels(
         };
       }
     );
-    const answered = responseModels.filter(
+    const resolved = responseModels.filter(
       (response) =>
-        response.state === "ANSWERED" && expectedIds.has(response.question.id)
+        (response.state === "ANSWERED" ||
+          response.state === "NOT_APPLICABLE") &&
+        expectedIds.has(response.question.id)
     );
     const q1 = responseModels.find(
       (response) => response.question.id === "q1"
@@ -200,7 +213,7 @@ export function buildParticipantViewModels(
         lastActivityAt: session.last_activity_at,
         completedAt: session.completed_at,
         withdrawnAt: session.withdrawn_at,
-        answeredCount: session.status === "withdrawn" ? 0 : answered.length,
+        answeredCount: session.status === "withdrawn" ? 0 : resolved.length,
         expectedCount,
         missingQuestionIds: responseModels
           .filter(
@@ -211,7 +224,7 @@ export function buildParticipantViewModels(
         hiddenQuestionIds: responseModels
           .filter((response) => response.state === "NOT_EXPECTED")
           .map((response) => response.question.id),
-        coverage: expectedCount ? answered.length / expectedCount : 0,
+        coverage: expectedCount ? resolved.length / expectedCount : 0,
         responses: responseModels,
         consent: consentsBySession.get(session.id) ?? null,
       },
@@ -222,38 +235,48 @@ export function buildParticipantViewModels(
 export function buildQuestionViewModels(
   participants: readonly ParticipantViewModel[]
 ): QuestionViewModel[] {
-  const questionnaire = getQuestionnaire("1.3.0");
-  return questionnaire.questions.map((question) => {
-    const eligible = participants.filter(
-      (participant) => participant.status !== "withdrawn"
-    );
-    const entries = eligible.flatMap((participant) => {
-      const response = participant.responses.find(
-        (item) => item.question.id === question.id
+  return supportedQuestionnaireVersions.flatMap((version) => {
+    const questionnaire = getQuestionnaire(version);
+    return questionnaire.questions.map((question) => {
+      const eligible = participants.filter(
+        (participant) =>
+          participant.status !== "withdrawn" &&
+          participant.questionnaireVersion === version
       );
-      return response && response.state !== "NOT_EXPECTED"
-        ? [{ participantCode: participant.participantCode, response }]
-        : [];
+      const entries = eligible.flatMap((participant) => {
+        const response = participant.responses.find(
+          (item) => item.question.id === question.id
+        );
+        return response && response.state !== "NOT_EXPECTED"
+          ? [{ participantCode: participant.participantCode, response }]
+          : [];
+      });
+      const expectedParticipantCount = entries.length;
+      const responses = entries.filter(
+        (entry) => entry.response.state === "ANSWERED"
+      );
+      const notApplicableCount = entries.filter(
+        (entry) => entry.response.state === "NOT_APPLICABLE"
+      ).length;
+      const resolvedCount = responses.length + notApplicableCount;
+      return {
+        questionnaireVersion: version,
+        questionId: question.id,
+        wording: question.wording,
+        ...(question.hint ? { hint: question.hint } : {}),
+        construct: question.construct,
+        responseType: question.responseType,
+        conditional: Boolean(question.visibility),
+        expectedParticipantCount,
+        responseCount: responses.length,
+        notApplicableCount,
+        missingCount: expectedParticipantCount - resolvedCount,
+        coverage: expectedParticipantCount
+          ? resolvedCount / expectedParticipantCount
+          : 0,
+        responses,
+      };
     });
-    const expectedParticipantCount = entries.length;
-    const responses = entries.filter(
-      (entry) => entry.response.state === "ANSWERED"
-    );
-    return {
-      questionId: question.id,
-      wording: question.wording,
-      ...(question.hint ? { hint: question.hint } : {}),
-      construct: question.construct,
-      responseType: question.responseType,
-      conditional: Boolean(question.visibility),
-      expectedParticipantCount,
-      responseCount: responses.length,
-      missingCount: expectedParticipantCount - responses.length,
-      coverage: expectedParticipantCount
-        ? responses.length / expectedParticipantCount
-        : 0,
-      responses,
-    };
   });
 }
 
@@ -271,7 +294,7 @@ export function expectedQuestionCount(roles: readonly string[]): 15 | 16 {
 }
 
 export function isKnownQuestionId(value: string): value is CurrentQuestionId {
-  return getQuestionnaire("1.3.0").questionIds.includes(
-    value as CurrentQuestionId
+  return supportedQuestionnaireVersions.some((version) =>
+    getQuestionnaire(version).questionIds.includes(value as CurrentQuestionId)
   );
 }

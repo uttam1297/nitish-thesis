@@ -31,9 +31,14 @@ export default async function QuestionDetailPage({
   const data = await getDashboardData();
   const question = buildQuestionViewModels(
     applyParticipantFilters(data.participants, filters)
-  ).find((item) => item.questionId === questionId);
+  ).find(
+    (item) =>
+      item.questionId === questionId &&
+      (filters.version === "all" ||
+        item.questionnaireVersion === filters.version)
+  );
   if (!question) notFound();
-  const metadata = getQuestion("1.3.0", questionId);
+  const metadata = getQuestion(question.questionnaireVersion, questionId);
   if (!metadata) notFound();
   const config = getDashboardConfig();
   const narrative = metadata.responseType === "voice_or_text";
@@ -59,7 +64,14 @@ export default async function QuestionDetailPage({
           label="Expected participants"
           value={question.expectedParticipantCount}
         />
-        <MetricCard label="Stored responses" value={question.responseCount} />
+        <MetricCard
+          label="Substantive responses"
+          value={question.responseCount}
+        />
+        <MetricCard
+          label="Not applicable"
+          value={question.notApplicableCount}
+        />
         <MetricCard label="Missing responses" value={question.missingCount} />
         <MetricCard
           label="Question coverage"
@@ -72,7 +84,7 @@ export default async function QuestionDetailPage({
           <dt>Construct</dt>
           <dd>{humanize(question.construct)}</dd>
           <dt>Questionnaire version</dt>
-          <dd>1.3.0</dd>
+          <dd>{question.questionnaireVersion}</dd>
           <dt>Question version</dt>
           <dd>{metadata.questionVersion}</dd>
           <dt>Required</dt>
@@ -88,7 +100,7 @@ export default async function QuestionDetailPage({
             {metadata.responseType === "likert_scale"
               ? `${metadata.scale.minimum}–${metadata.scale.maximum} integer scale`
               : metadata.responseType === "voice_or_text"
-                ? `At least ${metadata.validation.minimumNonWhitespaceCharacters} non-whitespace characters`
+                ? `At least ${metadata.validation.minimumNonWhitespaceCharacters} non-whitespace characters${metadata.allowNotApplicable ? ", or explicitly marked not applicable" : ""}`
                 : "Configured questionnaire options"}
           </dd>
         </dl>

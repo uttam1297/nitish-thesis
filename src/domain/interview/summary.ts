@@ -11,7 +11,7 @@ export interface AnswerSummary {
   section: string;
   /** Participant-readable rendering of the stored answer. */
   text: string;
-  state: "answered" | "skipped" | "unanswered";
+  state: "answered" | "not_applicable" | "skipped" | "unanswered";
   required: boolean;
 }
 
@@ -64,6 +64,8 @@ export function formatAnswer(
         .join("  ");
     case "text":
       return value.text.trim();
+    case "not_applicable":
+      return "Not applicable to my experience";
   }
 }
 
@@ -83,9 +85,11 @@ export function summarise(
       text: formatAnswer(question, response),
       state: answered
         ? "answered"
-        : response?.skipped
-          ? "skipped"
-          : "unanswered",
+        : response?.value?.kind === "not_applicable"
+          ? "not_applicable"
+          : response?.skipped
+            ? "skipped"
+            : "unanswered",
       required: question.required,
     };
   });
