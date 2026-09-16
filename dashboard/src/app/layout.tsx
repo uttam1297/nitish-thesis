@@ -7,6 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Thesis Data Dashboard",
   description: "Read-only dashboard for thesis research data.",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

@@ -67,7 +67,7 @@ export async function listSessions(
 export async function listResponses(
   db: SupabaseClient = getDashboardSupabaseClient(),
 ): Promise<ResponseRow[]> {
-  return readRows("read responses", db.from("responses").select("id,session_id,participant_id,question_id,question_version,construct,response_type,response_value,optional_elaboration,created_at,updated_at").order("created_at"));
+  return readRows("read responses", db.from("responses").select("id,session_id,participant_id,question_id,question_version,construct,response_type,response_value,created_at,updated_at").order("created_at"));
 }
 
 export async function listConsents(

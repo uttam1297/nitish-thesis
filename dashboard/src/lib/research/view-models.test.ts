@@ -19,7 +19,7 @@ function snapshot(roleValues: string[], overrides: Record<string, unknown> = {})
     studies: [], questionnaireVersions: [],
     participants: [{ id: "p1", participant_code: "P002", role: "formatted", industry: "Retail", experience: "3-6 years", closeness_to_discovery: "4", created_at: now }],
     sessions: [session],
-    responses: [{ id: "r1", session_id: "s1", participant_id: "p1", question_id: "q1", question_version: "1", construct: "discovery-behaviour", response_type: "multi_select", response_value: { kind: "choices", values: roleValues }, optional_elaboration: null, created_at: now, updated_at: now }],
+    responses: [{ id: "r1", session_id: "s1", participant_id: "p1", question_id: "q1", question_version: "1", construct: "discovery-behaviour", response_type: "multi_select", response_value: { kind: "choices", values: roleValues }, created_at: now, updated_at: now }],
     consents: [], refreshedAt: now,
   };
 }

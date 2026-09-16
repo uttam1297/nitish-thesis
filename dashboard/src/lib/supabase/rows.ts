@@ -50,7 +50,6 @@ export type ResponseRow = Readonly<{
   construct: string;
   response_type: string;
   response_value: unknown;
-  optional_elaboration: string | null;
   created_at: string;
   updated_at: string;
 }>;
