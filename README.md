@@ -41,11 +41,15 @@ participant interview application.
 Participant interview → writes → Supabase ← reads ← thesis dashboard
 ```
 
-The dashboard defaults to main-study data, keeps pilot data explicitly
-selectable, applies the exact engineering-only Q7 denominator, and uses
-approximately 30-minute server-side caching. Public narrative display and
-raw JSON are both disabled by default. See `dashboard/README.md` for routes,
-configuration, privacy decisions, deployment details, and limitations.
+The dashboard presents every stored session as one dataset: study stage,
+questionnaire version and collection mode are still read from Supabase and
+still drive per-session question mapping, but none of them is a
+visitor-facing filter. It applies the exact engineering-only Q7
+denominator, merges questions across questionnaire versions for display,
+and uses approximately 30-minute server-side caching. Public narrative
+display and raw JSON are both disabled by default. See
+`dashboard/README.md` for routes, charts, configuration, privacy
+decisions, deployment details, and limitations.
 
 Question wording and Q1 options are sourced exclusively from
 `question-set.md`. The duplicated wording of Q10 and Q11 is intentionally

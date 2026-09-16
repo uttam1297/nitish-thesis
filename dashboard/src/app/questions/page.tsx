@@ -100,7 +100,9 @@ export default async function QuestionsPage({
       </form>
       <p className="definition">
         <strong>Answered</strong> counts the people who were actually asked each
-        question. Q7 is not asked of participants who work solely in
+        question. Questions marked <strong>Retired</strong> are no longer part
+        of the interview; they stay listed because earlier participants did
+        answer them. Q7 is not asked of participants who work solely in
         engineering, so they are left out of its total rather than counted as
         missing.
       </p>
@@ -111,7 +113,9 @@ export default async function QuestionsPage({
             label: question.questionId.toUpperCase(),
             done: question.responseCount + question.notApplicableCount,
             total: question.expectedParticipantCount,
-            note: question.wording,
+            note: question.retired
+              ? `Retired — no longer asked. ${question.wording}`
+              : question.wording,
           }))}
           caption="Hover a bar for the exact count; hover a label for the full question wording."
           empty="No questions match these filters."
@@ -126,6 +130,7 @@ export default async function QuestionsPage({
               <th>Wording</th>
               <th>Construct</th>
               <th>Response type</th>
+              <th>Status</th>
               <th>Conditional</th>
               <th>Expected</th>
               <th>Answered</th>
@@ -145,6 +150,13 @@ export default async function QuestionsPage({
                 <td>{question.wording}</td>
                 <td>{humanize(question.construct)}</td>
                 <td>{humanize(question.responseType)}</td>
+                <td>
+                  {question.retired ? (
+                    <span className="badge warning">Retired</span>
+                  ) : (
+                    <span className="badge">Asked now</span>
+                  )}
+                </td>
                 <td>{question.conditional ? "Yes" : "No"}</td>
                 <td>{question.expectedParticipantCount}</td>
                 <td>{question.responseCount}</td>

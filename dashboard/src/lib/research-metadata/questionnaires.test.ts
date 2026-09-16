@@ -4,11 +4,15 @@ import { questionnaireV130, researchConstructs } from "./questionnaire-v1-3-0";
 import { questionnaireV140 } from "./questionnaire-v1-4-0";
 import { questionnaireV150 } from "./questionnaire-v1-5-0";
 import {
+  currentQuestionnaireVersion,
   getExpectedQuestionIds,
   getQuestion,
   getQuestionIds,
   getQuestionnaire,
+  isConstructKnownToAnyVersion,
   isQuestionExpected,
+  isQuestionKnownToAnyVersion,
+  isRetiredQuestion,
   supportedQuestionnaireVersions,
 } from "./questionnaires";
 
@@ -204,6 +208,25 @@ describe("version-aware registry", () => {
       if (question.responseType !== "voice_or_text") continue;
       expect(question.input).toEqual({ voice: false, text: true });
     }
+  });
+
+  it("recognises questions and constructs from any supported version", () => {
+    // The integrity checks use these: a response is only genuinely unknown
+    // when no version ever defined it, not when the current one dropped it.
+    expect(isQuestionKnownToAnyVersion("q11")).toBe(true);
+    expect(isQuestionKnownToAnyVersion("q16")).toBe(true);
+    expect(isQuestionKnownToAnyVersion("q99")).toBe(false);
+    expect(isConstructKnownToAnyVersion("governance")).toBe(true);
+    expect(isConstructKnownToAnyVersion("not-a-construct")).toBe(false);
+  });
+
+  it("knows which questions the current questionnaire has retired", () => {
+    expect(currentQuestionnaireVersion()).toBe("1.5.0");
+    expect(isRetiredQuestion("q11")).toBe(true);
+    expect(isRetiredQuestion("q16")).toBe(true);
+    expect(isRetiredQuestion("q5")).toBe(false);
+    // Never asked anywhere, so not "retired" either.
+    expect(isRetiredQuestion("q99")).toBe(false);
   });
 
   it("rejects unknown versions instead of silently falling back", () => {

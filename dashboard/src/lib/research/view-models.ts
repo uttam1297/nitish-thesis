@@ -2,6 +2,7 @@ import {
   getExpectedQuestionIds,
   getQuestion,
   getQuestionnaire,
+  isRetiredQuestion,
   supportedQuestionnaireVersions,
   type ChoicesAnswer,
   type CurrentQuestionId,
@@ -287,6 +288,8 @@ export type QuestionSummary = Readonly<{
   construct: string;
   responseType: string;
   conditional: boolean;
+  /** True when the questionnaire in use today no longer asks this. */
+  retired: boolean;
   expectedParticipantCount: number;
   responseCount: number;
   notApplicableCount: number;
@@ -321,6 +324,7 @@ export function buildQuestionSummaries(
       const { questionnaireVersion, ...rest } = question;
       merged.set(question.questionId, {
         ...rest,
+        retired: isRetiredQuestion(question.questionId),
         questionnaireVersions: [questionnaireVersion],
       });
       continue;
@@ -332,6 +336,13 @@ export function buildQuestionSummaries(
       existing.notApplicableCount + question.notApplicableCount;
     merged.set(question.questionId, {
       ...existing,
+      // Versions arrive oldest-first, so the incoming row is always the
+      // newer wording — which is the one a visitor should be reading.
+      wording: question.wording,
+      ...(question.hint ? { hint: question.hint } : {}),
+      construct: question.construct,
+      responseType: question.responseType,
+      conditional: question.conditional,
       expectedParticipantCount,
       responseCount,
       notApplicableCount,
@@ -339,9 +350,11 @@ export function buildQuestionSummaries(
       coverage: expectedParticipantCount
         ? (responseCount + notApplicableCount) / expectedParticipantCount
         : 0,
+      // Newest first: the detail page reads its wording and validation from
+      // questionnaireVersions[0], which must be the version in use today.
       questionnaireVersions: [
-        ...existing.questionnaireVersions,
         question.questionnaireVersion,
+        ...existing.questionnaireVersions,
       ],
       responses: [...existing.responses, ...question.responses],
     });
