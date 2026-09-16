@@ -1,6 +1,8 @@
 import {
   getQuestion,
-  getResearchConstruct,
+  isConstructKnownToAnyVersion,
+  isQuestionKnownToAnyVersion,
+  isRetiredQuestion,
   supportedQuestionnaireVersions,
 } from "../research-metadata";
 import type { ResearchDataSnapshot } from "../supabase/rows";
@@ -35,6 +37,8 @@ export type QuestionCompletion = Readonly<{
   resolved: number;
   expected: number;
   conditional: boolean;
+  /** True when the questionnaire in use today no longer asks this. */
+  retired: boolean;
 }>;
 
 /** How far one participant has got through the questions asked of them. */
@@ -235,6 +239,7 @@ function buildQuestionCompletion(
       resolved: entry.resolved,
       expected: entry.expected,
       conditional: entry.conditional,
+      retired: isRetiredQuestion(questionId),
     }))
     .sort(
       (a, b) =>
@@ -382,11 +387,15 @@ export function runIntegrityChecks(
   const responsePairs = snapshot.responses.map(
     (row) => `${row.session_id}:${row.question_id}`
   );
+  // Checked against every supported questionnaire, not one pinned version:
+  // a response is only genuinely unknown when no version ever defined it.
+  // Pinning this to 1.3.0 would report a question introduced later as
+  // "unknown", and would stop recognising one retired since.
   const unknownQuestions = snapshot.responses.filter(
-    (row) => !getQuestion("1.3.0", row.question_id)
+    (row) => !isQuestionKnownToAnyVersion(row.question_id)
   ).length;
   const unexpectedConstructs = snapshot.responses.filter(
-    (row) => !getResearchConstruct("1.3.0", row.construct)
+    (row) => !isConstructKnownToAnyVersion(row.construct)
   ).length;
   const orphaned = snapshot.responses.filter(
     (row) =>

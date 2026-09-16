@@ -84,7 +84,7 @@ const authoritativeSourceFingerprints = {
   "src/domain/interview/conditions.ts":
     "89c2bb9a01f303b7d120af0102e57c14a084f78b014570cf030d2bc5e0d63cd8",
   "src/features/interview/use-server-sync.ts":
-    "db4f3f620b2e162fc33724553848b62e46104b511a71007118ddd1d75f6fe519",
+    "d4df9764ee98784edc1dcecc9c50e130888c824df5a24827cce11a92e76a429d",
   "supabase/migrations/20260910100000_init.sql":
     "b384429e7ce0a3585a0a187b3fb92c6f5ef9c762a600d9c8da68fd03f4444b6e",
   "supabase/migrations/20260911231500_questionnaire_v1_3_0.sql":

@@ -57,6 +57,13 @@ export default async function QuestionDetailPage({
         </div>
         <span className="badge">{humanize(question.responseType)}</span>
       </header>
+      {question.retired && (
+        <p className="definition">
+          <strong>Retired question.</strong> The interview no longer asks this.
+          The answers below were collected while it was still part of the
+          questionnaire and remain part of the dataset.
+        </p>
+      )}
       <FilterBar filters={filters} />
       <section className="card-grid">
         <MetricCard

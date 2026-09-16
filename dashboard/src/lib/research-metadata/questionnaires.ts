@@ -34,6 +34,41 @@ export function getQuestionnaire(version: string): QuestionnaireMetadata {
   return questionnaireRegistry[version];
 }
 
+/** The questionnaire new participants are answering today. */
+export function currentQuestionnaireVersion(): QuestionnaireVersion {
+  return supportedQuestionnaireVersions[
+    supportedQuestionnaireVersions.length - 1
+  ];
+}
+
+/** True when no supported questionnaire version defines this question. */
+export function isQuestionKnownToAnyVersion(questionId: string): boolean {
+  return supportedQuestionnaireVersions.some((version) =>
+    questionnaireRegistry[version].questions.some(
+      (question) => question.id === questionId
+    )
+  );
+}
+
+/** True when no supported questionnaire version defines this construct. */
+export function isConstructKnownToAnyVersion(constructId: string): boolean {
+  return supportedQuestionnaireVersions.some((version) =>
+    questionnaireRegistry[version].constructs.some(
+      (construct) => construct.id === constructId
+    )
+  );
+}
+
+/** True when the current questionnaire no longer asks this question. */
+export function isRetiredQuestion(questionId: string): boolean {
+  return (
+    isQuestionKnownToAnyVersion(questionId) &&
+    !questionnaireRegistry[currentQuestionnaireVersion()].questionIds.includes(
+      questionId as never
+    )
+  );
+}
+
 export function getQuestion(
   version: string,
   questionId: string

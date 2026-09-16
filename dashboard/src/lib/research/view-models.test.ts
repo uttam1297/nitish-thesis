@@ -162,6 +162,33 @@ describe("participant view models", () => {
     ).toBe(2);
   });
 
+  it("reads merged questions from the newest version that asks them", () => {
+    const participant = buildParticipantViewModels(snapshot(["product"]))[0];
+    const summaries = buildQuestionSummaries(
+      buildQuestionViewModels([participant])
+    );
+    const q5 = summaries.find((question) => question.questionId === "q5");
+
+    // The detail page takes its metadata from questionnaireVersions[0], so
+    // the current questionnaire has to come first.
+    expect(q5?.questionnaireVersions[0]).toBe("1.5.0");
+    expect(q5?.retired).toBe(false);
+  });
+
+  it("marks questions the current questionnaire has dropped as retired", () => {
+    const participant = buildParticipantViewModels(snapshot(["product"]))[0];
+    const summaries = buildQuestionSummaries(
+      buildQuestionViewModels([participant])
+    );
+
+    expect(
+      summaries.find((question) => question.questionId === "q11")?.retired
+    ).toBe(true);
+    expect(
+      summaries.find((question) => question.questionId === "q16")?.retired
+    ).toBe(true);
+  });
+
   it("merges a question across questionnaire versions into one row", () => {
     const older = buildParticipantViewModels(snapshot(["product"]))[0];
     const summaries = buildQuestionSummaries(buildQuestionViewModels([older]));

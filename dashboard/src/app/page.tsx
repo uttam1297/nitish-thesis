@@ -171,11 +171,13 @@ export default async function OverviewPage({
               label: item.label,
               done: item.resolved,
               total: item.expected,
-              note: item.conditional
-                ? "Only asked of some participants, so its total is lower."
-                : undefined,
+              note: item.retired
+                ? "No longer asked — kept here because earlier participants answered it."
+                : item.conditional
+                  ? "Only asked of some participants, so its total is lower."
+                  : undefined,
             }))}
-            caption="Each total counts only the people who were actually asked that question. Q7 is skipped for participants who work solely in engineering, so it is never counted as missing for them."
+            caption="Each total counts only the people who were actually asked that question. Q7 is skipped for participants who work solely in engineering, so it is never counted as missing for them. Retired questions stay listed because the answers already collected for them are still real data."
           />
         </div>
       </section>
