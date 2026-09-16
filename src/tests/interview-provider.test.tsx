@@ -18,6 +18,7 @@ function Harness() {
     <div>
       <p data-testid="step">{interview.state.currentStepId}</p>
       <p data-testid="resumable">{String(interview.hasResumableDraft)}</p>
+      <p data-testid="start-over-count">{interview.startOverCount}</p>
       <p data-testid="other-tab">
         {String(interview.otherTabHasNewerProgress)}
       </p>
@@ -119,6 +120,9 @@ describe("InterviewProvider persistence", () => {
     await user.click(screen.getByText("start-over"));
     expect(screen.getByTestId("resumable")).toHaveTextContent("false");
     expect(storage.load()).toBeNull();
+    // Server sync watches this to detach from the abandoned draft's
+    // session, so the next answers cannot overwrite that participant's rows.
+    expect(screen.getByTestId("start-over-count")).toHaveTextContent("1");
   });
 
   it("warns when another tab writes a newer draft for the same key", async () => {

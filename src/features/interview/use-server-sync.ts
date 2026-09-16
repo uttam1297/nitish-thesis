@@ -43,6 +43,7 @@ function isMissingSession(error: unknown): boolean {
 export function useServerSync(interview: InterviewContextValue) {
   const [status, setStatus] = useState<SyncStatus>("idle");
   const [participantCode, setParticipantCode] = useState<string | null>(null);
+  const [submitFailed, setSubmitFailed] = useState(false);
   const identityRef = useRef<SessionIdentity | null>(null);
   const hasSubmittedRef = useRef(false);
   const inFlightRef = useRef<Promise<void> | null>(null);
@@ -50,6 +51,24 @@ export function useServerSync(interview: InterviewContextValue) {
   useEffect(() => {
     identityRef.current = loadSessionIdentity();
   }, []);
+
+  // Starting over means these answers belong to someone else — or to a
+  // deliberately fresh attempt. Without this the next answers would upsert
+  // straight into the abandoned draft's session and overwrite that
+  // participant's rows, because the identity outlives the draft.
+  const startOverCount = interview.startOverCount;
+  const seenStartOverCount = useRef(startOverCount);
+  useEffect(() => {
+    if (startOverCount === seenStartOverCount.current) return;
+    seenStartOverCount.current = startOverCount;
+    identityRef.current = null;
+    hasSubmittedRef.current = false;
+    clearSessionIdentity();
+    clearPendingSessionRequestId();
+    setParticipantCode(null);
+    setSubmitFailed(false);
+    setStatus("idle");
+  }, [startOverCount]);
 
   const performSync = useCallback(async () => {
     const { state, questionnaire } = interview;
@@ -224,54 +243,84 @@ export function useServerSync(interview: InterviewContextValue) {
     return () => window.clearInterval(timer);
   }, [status, runSync]);
 
-  // Idempotent final submit: guarded so a re-render never double-fires it.
-  // Runs a sync first — a participant can click "Finish" before the
-  // debounced sync has ever fired, and the session (created lazily on
-  // first sync) must exist before there is anything to mark completed.
+  /**
+   * Marks the session completed server-side. Idempotent: `markCompleted`
+   * only transitions a session that is not already completed, so a retry
+   * can never produce a second completion.
+   *
+   * Returns false when the attempt failed and is worth retrying.
+   */
+  const runSubmit = useCallback(async (): Promise<boolean> => {
+    const pendingSync = inFlightRef.current;
+    if (pendingSync) await pendingSync;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await runSync();
+
+      const identity = identityRef.current;
+      // Nothing was ever persisted, so there is no session to complete.
+      // The sync retry loop is what recovers this case.
+      if (!identity) return false;
+
+      try {
+        const result = await submitServerSession({
+          sessionId: identity.sessionId,
+          resumeToken: identity.resumeToken,
+        });
+        setParticipantCode(result.participantCode);
+        identityRef.current = null;
+        clearSessionIdentity();
+        clearPendingSessionRequestId();
+        return true;
+      } catch (error) {
+        if (attempt === 0 && isMissingSession(error)) {
+          identityRef.current = null;
+          clearSessionIdentity();
+          clearPendingSessionRequestId();
+          continue;
+        }
+        return false;
+      }
+    }
+    return false;
+  }, [runSync]);
+
+  // Final submit, fired once when the participant finishes. Runs a sync
+  // first: a participant can click "Finish" before the debounced sync has
+  // ever fired, and the session (created lazily on first sync) must exist
+  // before there is anything to mark completed.
   useEffect(() => {
     if (interview.state.status !== "submitted") return;
     if (hasSubmittedRef.current) return;
     hasSubmittedRef.current = true;
 
     void (async () => {
-      const pendingSync = inFlightRef.current;
-      if (pendingSync) await pendingSync;
-
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        await runSync();
-
-        const identity = identityRef.current;
-        if (!identity) {
-          hasSubmittedRef.current = false;
-          return;
-        }
-        try {
-          const result = await submitServerSession({
-            sessionId: identity.sessionId,
-            resumeToken: identity.resumeToken,
-          });
-          setParticipantCode(result.participantCode);
-          identityRef.current = null;
-          clearSessionIdentity();
-          clearPendingSessionRequestId();
-          return;
-        } catch (error) {
-          if (attempt === 0 && isMissingSession(error)) {
-            identityRef.current = null;
-            clearSessionIdentity();
-            clearPendingSessionRequestId();
-            continue;
-          }
-
-          // Safe to leave unresolved: the participant already sees the local
-          // completion screen, and the retry loop above keeps syncing content
-          // in the (rare) case the submit call itself failed on the network.
-          hasSubmittedRef.current = false;
-          return;
-        }
-      }
+      const submitted = await runSubmit();
+      setSubmitFailed(!submitted);
     })();
-  }, [interview.state.status, runSync]);
+  }, [interview.state.status, runSubmit]);
+
+  /**
+   * Keeps retrying a failed final submit.
+   *
+   * This used to be left to the sync retry loop, which only ever resent
+   * answers — it never called submit again. A submit that failed while
+   * syncing still worked therefore stranded the session as "in progress"
+   * for good: nothing re-rendered afterwards, so the effect above never
+   * re-fired, and reloading did not help because the draft is cleared at
+   * submission. The answers were safe; the completion was lost.
+   */
+  useEffect(() => {
+    if (!submitFailed) return;
+    if (participantCode) return;
+
+    const timer = window.setInterval(() => {
+      void (async () => {
+        if (await runSubmit()) setSubmitFailed(false);
+      })();
+    }, RETRY_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [submitFailed, participantCode, runSubmit]);
 
   const [resumeLink, setResumeLink] = useState<string | null>(null);
   useEffect(() => {
