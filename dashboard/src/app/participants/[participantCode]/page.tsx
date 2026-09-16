@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
+import { currentQuestionnaireVersion } from "@/lib/research-metadata";
 import { getDashboardData } from "@/lib/research/dashboard-data";
 import { displayAnswer } from "@/lib/research/privacy";
 import {
@@ -108,7 +109,13 @@ export default async function ParticipantDetailPage({
       </section>
       <section>
         <h2>Questionnaire record</h2>
-        {participant.responses.map((response) => {
+        <p className="muted small">
+          Every participant is listed against the current question set (
+          {currentQuestionnaireVersion()}). This participant answered{" "}
+          {participant.questionnaireVersion}; questions that version did not ask
+          are marked accordingly.
+        </p>
+        {participant.canonicalResponses.map((response) => {
           const narrative = response.question.responseType === "voice_or_text";
           const readable = displayAnswer(response, config);
           // "Not applicable" is an answer the participant chose, so it reads as
@@ -141,6 +148,29 @@ export default async function ParticipantDetailPage({
           );
         })}
       </section>
+      {participant.supplementaryResponses.length > 0 && (
+        <section>
+          <h2>Answers to retired questions</h2>
+          <p className="muted small">
+            Asked under questionnaire {participant.questionnaireVersion} and
+            retired since. Kept as collected, and reported separately so they
+            are never counted against the current question set.
+          </p>
+          {participant.supplementaryResponses.map((response) => (
+            <article
+              className="panel answer-state answered"
+              key={response.question.id}
+            >
+              <p className="eyebrow">
+                {response.question.id} · {humanize(response.question.construct)}
+              </p>
+              <h3>{response.question.wording}</h3>
+              <span className="badge">Retired question</span>
+              <p>{displayAnswer(response, config)}</p>
+            </article>
+          ))}
+        </section>
+      )}
     </main>
   );
 }

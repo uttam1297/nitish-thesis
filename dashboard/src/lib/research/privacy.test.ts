@@ -6,6 +6,8 @@ import type { ParticipantViewModel } from "./view-models";
 
 const secretNarrative = "private verbatim participant narrative";
 const participant: ParticipantViewModel = {
+  canonicalResponses: [],
+  supplementaryResponses: [],
   participantCode: "P002",
   roles: [],
   industry: "",

@@ -200,3 +200,62 @@ describe("participant view models", () => {
     expect(q1[0].expectedParticipantCount).toBe(1);
   });
 });
+
+describe("one question set across questionnaire versions", () => {
+  const withRetiredAnswer = () => {
+    const base = snapshot(["product"]);
+    return {
+      ...base,
+      responses: [
+        ...base.responses,
+        {
+          id: "r2",
+          session_id: "s1",
+          participant_id: "p1",
+          question_id: "q11",
+          question_version: "1",
+          construct: "organisational-response",
+          response_type: "voice_or_text",
+          response_value: {
+            kind: "text",
+            text: "Answer to a retired question.",
+          },
+          created_at: now,
+          updated_at: now,
+        },
+      ],
+    };
+  };
+
+  it("reports a 1.3.0 participant against the current question set", () => {
+    const participant = buildParticipantViewModels(withRetiredAnswer())[0];
+
+    expect(participant.questionnaireVersion).toBe("1.3.0");
+    const canonicalIds = participant.canonicalResponses.map(
+      (response) => response.question.id
+    );
+    expect(canonicalIds).not.toContain("q11");
+    expect(canonicalIds).not.toContain("q16");
+    expect(canonicalIds).toContain("q10");
+    expect(canonicalIds).toContain("q17");
+  });
+
+  it("keeps a retired question's answer instead of dropping or folding it", () => {
+    const participant = buildParticipantViewModels(withRetiredAnswer())[0];
+    const retired = participant.supplementaryResponses;
+
+    expect(retired.map((response) => response.question.id)).toEqual(["q11"]);
+    expect(retired[0].readableAnswer).toBe("Answer to a retired question.");
+    // Q11 repeated Q10's wording, so folding them together would invent an
+    // answer Q10 never received.
+    const q10 = participant.canonicalResponses.find(
+      (response) => response.question.id === "q10"
+    );
+    expect(q10?.state).toBe("MISSING");
+  });
+
+  it("lists only answered retired questions, not unanswered ones", () => {
+    const participant = buildParticipantViewModels(snapshot(["product"]))[0];
+    expect(participant.supplementaryResponses).toEqual([]);
+  });
+});
