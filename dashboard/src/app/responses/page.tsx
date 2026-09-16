@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { FilterBar } from "@/components/filter-bar";
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import { getDashboardData } from "@/lib/research/dashboard-data";
 import {
@@ -65,11 +64,19 @@ export default async function ResponsesPage({
             redaction.
           </p>
         </div>
-        <strong>{rows.length} rows</strong>
+        <span className="record-count">{rows.length} rows</span>
       </header>
-      <FilterBar filters={filters} showStatus />
       <form className="filter-bar" method="get">
-        <input type="hidden" name="status" value={filters.status} />
+        <label>
+          Status
+          <select name="status" defaultValue={filters.status}>
+            <option value="all">All statuses</option>
+            <option value="started">Started</option>
+            <option value="in_progress">In progress</option>
+            <option value="completed">Completed</option>
+            <option value="withdrawn">Withdrawn</option>
+          </select>
+        </label>
         <label>
           Participant
           <input
@@ -107,7 +114,7 @@ export default async function ResponsesPage({
           <input type="date" name="to" defaultValue={to} />
         </label>
         <button className="button" type="submit">
-          Apply response filters
+          Apply filters
         </button>
       </form>
       {!config.showNarratives && (
