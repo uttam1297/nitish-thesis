@@ -12,7 +12,7 @@ export const studyContent = {
       "A short qualitative interview on how AI-mediated discovery is changing B2C customer acquisition — for my Master's thesis.",
     highlights: [
       "One question at a time",
-      "Type or speak your answer",
+      "Type your answer in your own words",
       "Saved as you go — pause anytime",
     ],
     resume: {

@@ -7,6 +7,7 @@ import {
   QUESTIONNAIRE_VERSION,
   questionnaire,
   questionnaireV130,
+  questionnaireV140,
 } from "@/config/interview";
 import { questionnaireSchema } from "@/domain/interview/schema";
 
@@ -46,17 +47,42 @@ describe("questionnaire configuration", () => {
     ).toBe(true);
   });
 
-  it("contains expected questions in source order (Q9 and Q18 removed)", () => {
+  it("contains expected questions in source order (Q9, Q18, Q11 and Q16 removed)", () => {
+    const removed = ["q9", "q18", "q11", "q16"];
     const expectedIds = Array.from(
       { length: 18 },
       (_, i) => `q${i + 1}`
-    ).filter((id) => id !== "q9" && id !== "q18");
+    ).filter((id) => !removed.includes(id));
     expect(questionnaire.questions.map((question) => question.id)).toEqual(
       expectedIds
     );
   });
 
-  it("adds not-applicable only to 1.4 narrative questions", () => {
+  it("keeps Q11 and Q16 in the versions that actually asked them", () => {
+    for (const version of [questionnaireV130, questionnaireV140]) {
+      const ids = version.questions.map((question) => question.id);
+      expect(ids).toContain("q11");
+      expect(ids).toContain("q16");
+    }
+  });
+
+  it("offers no voice input in 1.5 and keeps it in earlier versions", () => {
+    const narrative = (item: typeof questionnaire) =>
+      item.questions.filter(
+        (question) => question.responseType === "voice_or_text"
+      );
+
+    expect(
+      narrative(questionnaire).every(
+        (question) => question.allowVoice === false
+      )
+    ).toBe(true);
+    expect(
+      narrative(questionnaireV140).every((question) => question.allowVoice)
+    ).toBe(true);
+  });
+
+  it("adds not-applicable to narrative questions after 1.3", () => {
     const previous = questionnaireV130.questions.filter(
       (question) => question.responseType === "voice_or_text"
     );
@@ -72,7 +98,7 @@ describe("questionnaire configuration", () => {
 
   it("uses only verbatim prompts from question-set.md", () => {
     const sourceQuestions = questionsFromMarkdown();
-    expect(sourceQuestions.size).toBe(16);
+    expect(sourceQuestions.size).toBe(14);
     for (const question of questionnaire.questions) {
       expect(question.prompt).toBe(
         sourceQuestions.get(question.researchMetadata.sourceRef)

@@ -1,13 +1,25 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function disableSpeechRecognition(page: Page) {
+/**
+ * The browser under test normally has no speech recognition at all, which
+ * would hide the microphone for the wrong reason. Installing a working stub
+ * proves the control is gone because questionnaire 1.5.0 retired voice input,
+ * not because the API was missing.
+ */
+async function installSpeechRecognition(page: Page) {
   await page.addInitScript(() => {
+    class StubSpeechRecognition {
+      lang = "";
+      interimResults = false;
+      continuous = false;
+      onresult: unknown = null;
+      onerror: unknown = null;
+      onend: unknown = null;
+      start() {}
+      stop() {}
+    }
     Object.defineProperty(window, "SpeechRecognition", {
-      value: undefined,
-      configurable: true,
-    });
-    Object.defineProperty(window, "webkitSpeechRecognition", {
-      value: undefined,
+      value: StubSpeechRecognition,
       configurable: true,
     });
   });
@@ -41,10 +53,10 @@ async function answerOpenQuestions(page: Page, count: number) {
   }
 }
 
-test("Flow C: voice unavailable falls back to typing and still completes", async ({
+test("Flow C: voice input is retired and typing completes the interview", async ({
   page,
 }) => {
-  await disableSpeechRecognition(page);
+  await installSpeechRecognition(page);
   await page.goto("/");
 
   await page.getByRole("button", { name: /begin the interview/i }).click();
@@ -62,15 +74,17 @@ test("Flow C: voice unavailable falls back to typing and still completes", async
 
   await continueSection(page);
 
-  // The first core question offers voice on a supported browser. With
-  // speech recognition disabled, no microphone control renders at all and
-  // the textarea is the only way to answer.
+  // Speech recognition is available in this browser, yet no microphone
+  // control renders: 1.5.0 turned voice off, so the textarea is the only
+  // way to answer.
   await expect(page.getByRole("button", { name: "Speak answer" })).toHaveCount(
     0
   );
   const answer = page.getByRole("textbox", { name: "Your answer" });
   await expect(answer).toBeVisible();
-  await answer.fill("Typed answer because voice input is unavailable here.");
+  await answer.fill(
+    "Typed answer because the interview no longer offers voice."
+  );
   await page.getByRole("button", { name: "Continue" }).click();
   await answerOpenQuestions(page, 2);
 
@@ -78,10 +92,10 @@ test("Flow C: voice unavailable falls back to typing and still completes", async
   await answerOpenQuestions(page, 1);
 
   await continueSection(page);
-  await answerOpenQuestions(page, 5);
+  await answerOpenQuestions(page, 4);
 
   await continueSection(page);
-  await answerOpenQuestions(page, 3);
+  await answerOpenQuestions(page, 2);
 
   await page.getByRole("button", { name: "Submit" }).click();
   await expect(
