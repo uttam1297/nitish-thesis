@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { questionnaireV130, researchConstructs } from "./questionnaire-v1-3-0";
 import { questionnaireV140 } from "./questionnaire-v1-4-0";
+import { questionnaireV150 } from "./questionnaire-v1-5-0";
 import {
   getExpectedQuestionIds,
   getQuestion,
@@ -180,10 +181,29 @@ describe("Q7 expected-question routing", () => {
 });
 
 describe("version-aware registry", () => {
-  it("advertises both preserved and current metadata versions", () => {
-    expect(supportedQuestionnaireVersions).toEqual(["1.3.0", "1.4.0"]);
+  it("advertises every preserved version alongside the current one", () => {
+    expect(supportedQuestionnaireVersions).toEqual(["1.3.0", "1.4.0", "1.5.0"]);
     expect(getQuestionnaire("1.3.0")).toBe(questionnaireV130);
     expect(getQuestionnaire("1.4.0")).toBe(questionnaireV140);
+    expect(getQuestionnaire("1.5.0")).toBe(questionnaireV150);
+  });
+
+  it("retires Q11 and Q16 in 1.5.0 without touching earlier versions", () => {
+    expect(getQuestionIds("1.5.0")).not.toContain("q11");
+    expect(getQuestionIds("1.5.0")).not.toContain("q16");
+    expect(getQuestion("1.5.0", "q11")).toBeUndefined();
+    expect(getQuestion("1.5.0", "q16")).toBeUndefined();
+
+    // Answers were genuinely collected under the earlier versions.
+    expect(getQuestionIds("1.4.0")).toContain("q11");
+    expect(getQuestionIds("1.3.0")).toContain("q16");
+  });
+
+  it("offers no voice input on 1.5.0 narrative questions", () => {
+    for (const question of questionnaireV150.questions.slice(4)) {
+      if (question.responseType !== "voice_or_text") continue;
+      expect(question.input).toEqual({ voice: false, text: true });
+    }
   });
 
   it("rejects unknown versions instead of silently falling back", () => {

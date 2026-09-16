@@ -64,9 +64,9 @@ test("Flow F: a duplicate final-submit request completes only one session", asyn
   await continueSection(page);
   await answerOpenQuestions(page, 1);
   await continueSection(page);
-  await answerOpenQuestions(page, 5);
+  await answerOpenQuestions(page, 4);
   await continueSection(page);
-  await answerOpenQuestions(page, 3);
+  await answerOpenQuestions(page, 2);
 
   await expect(
     page.getByRole("heading", { name: "Review your answers" })

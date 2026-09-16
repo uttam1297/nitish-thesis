@@ -1,4 +1,4 @@
-export type QuestionnaireVersion = "1.3.0" | "1.4.0";
+export type QuestionnaireVersion = "1.3.0" | "1.4.0" | "1.5.0";
 
 export type CurrentQuestionId =
   | "q1"
@@ -118,7 +118,7 @@ export type NarrativeQuestionMetadata = QuestionBase &
   Readonly<{
     responseType: "voice_or_text";
     responseShape: Extract<AnswerShapeMetadata, { kind: "text" }>;
-    input: Readonly<{ voice: true; text: true }>;
+    input: Readonly<{ voice: boolean; text: true }>;
     allowNotApplicable?: true;
     validation: Readonly<{ minimumNonWhitespaceCharacters: number }>;
   }>;

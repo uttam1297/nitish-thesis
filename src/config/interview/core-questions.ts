@@ -22,7 +22,12 @@ interface SourceQuestion {
   hint?: string;
 }
 
-/** Every core prompt is copied verbatim from Q5-Q18 in `question-set.md`. */
+/**
+ * Every core prompt is copied verbatim from `question-set.md`. Questions are
+ * never edited out of this list when they are retired: a version that no
+ * longer asks one filters it out instead, so a session pinned to an older
+ * version still renders exactly the questions that participant was asked.
+ */
 const sourceQuestions: SourceQuestion[] = [
   {
     id: "q5",
@@ -134,11 +139,23 @@ const sourceQuestions: SourceQuestion[] = [
   },
 ];
 
-export function buildCoreQuestions(
-  allowNotApplicable = false
-): InterviewQuestion[] {
-  return sourceQuestions.map(
-    ({ id, sourceRef, section, construct, prompt, hint }) => ({
+export interface CoreQuestionOptions {
+  /** Offers the structured "not applicable to my experience" opt-out. */
+  allowNotApplicable?: boolean;
+  /** Renders the microphone control alongside the text box. */
+  allowVoice?: boolean;
+  /** Question ids this version no longer asks. */
+  removedIds?: readonly string[];
+}
+
+export function buildCoreQuestions({
+  allowNotApplicable = false,
+  allowVoice = true,
+  removedIds = [],
+}: CoreQuestionOptions = {}): InterviewQuestion[] {
+  return sourceQuestions
+    .filter(({ id }) => !removedIds.includes(id))
+    .map(({ id, sourceRef, section, construct, prompt, hint }) => ({
       id,
       section,
       construct,
@@ -147,7 +164,7 @@ export function buildCoreQuestions(
       description: hint,
       required: true,
       responseType: "voice_or_text",
-      allowVoice: true,
+      allowVoice,
       allowText: true,
       ...(allowNotApplicable ? { allowNotApplicable: true } : {}),
       validation: { minLength: 20 },
@@ -171,9 +188,15 @@ export function buildCoreQuestions(
             ],
           }
         : {}),
-    })
-  );
+    }));
 }
 
+/**
+ * Retired in 1.5.0. The source document repeated Q10's prompt verbatim as
+ * Q11, so answers to the two could never be told apart in analysis; Q16 was
+ * dropped from the study.
+ */
+export const REMOVED_IN_V150 = Object.freeze(["q11", "q16"]);
+
 /** Historical 1.3 question set retained for existing sessions. */
-export const coreQuestions = buildCoreQuestions(false);
+export const coreQuestions = buildCoreQuestions();

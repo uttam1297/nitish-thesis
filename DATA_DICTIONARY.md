@@ -88,12 +88,12 @@ statistical analysis.
 
 Append-only: a session's consent history, never edited in place.
 
-| Column                          | Type        | Meaning                                                                                                                                                      |
-| ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`                            | uuid        | Primary key.                                                                                                                                                 |
-| `session_id` / `participant_id` | uuid        | FKs.                                                                                                                                                         |
-| `consent_version`               | text        | Which wording of the consent statements — see `CONSENT_VERSION` in `src/config/study.ts`.                                                                    |
-| `participation_consent`         | boolean     | Always `true` for a row that exists — the server rejects session creation without it.                                                                        |
-| `voice_input_consent`           | boolean     | Agreement to type-or-speak answers into the form. **Not** the same as `recording_consent`.                                                                   |
-| `recording_consent`             | boolean     | Agreement to have a **live call recorded** — distinct from voice-input consent. For `response_mode = asynchronous_form`, normally `false` (no call happens). |
-| `consented_at`                  | timestamptz |                                                                                                                                                              |
+| Column                          | Type        | Meaning                                                                                                                                                        |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                            | uuid        | Primary key.                                                                                                                                                   |
+| `session_id` / `participant_id` | uuid        | FKs.                                                                                                                                                           |
+| `consent_version`               | text        | Which wording of the consent statements — see `CONSENT_VERSION` in `src/config/study.ts`.                                                                      |
+| `participation_consent`         | boolean     | Always `true` for a row that exists — the server rejects session creation without it.                                                                          |
+| `voice_input_consent`           | boolean     | Agreement to speak answers into the form. Always `false` from questionnaire 1.5.0 onwards, which retired voice input. **Not** the same as `recording_consent`. |
+| `recording_consent`             | boolean     | Agreement to have a **live call recorded** — distinct from voice-input consent. For `response_mode = asynchronous_form`, normally `false` (no call happens).   |
+| `consented_at`                  | timestamptz |                                                                                                                                                                |
