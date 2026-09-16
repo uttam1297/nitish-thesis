@@ -9,6 +9,8 @@ export function FilterBar({
   showStatus?: boolean;
   showSearch?: boolean;
 }) {
+  if (!showStatus && !showSearch) return null;
+
   return (
     <form className="filter-bar" method="get">
       {showSearch && (
@@ -21,30 +23,6 @@ export function FilterBar({
           />
         </label>
       )}
-      <label>
-        Study stage
-        <select name="stage" defaultValue={filters.stage}>
-          <option value="main">Main</option>
-          <option value="pilot">Pilot</option>
-          <option value="all">All stages</option>
-        </select>
-      </label>
-      <label>
-        Questionnaire
-        <select name="version" defaultValue={filters.version}>
-          <option value="all">All versions</option>
-          <option value="1.3.0">1.3.0</option>
-          <option value="1.4.0">1.4.0</option>
-        </select>
-      </label>
-      <label>
-        Collection mode
-        <select name="mode" defaultValue={filters.mode}>
-          <option value="all">All modes</option>
-          <option value="asynchronous_form">Asynchronous form</option>
-          <option value="live_interview">Live interview</option>
-        </select>
-      </label>
       {showStatus && (
         <label>
           Status

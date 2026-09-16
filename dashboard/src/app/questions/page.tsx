@@ -7,7 +7,11 @@ import {
   parseDashboardFilters,
 } from "@/lib/research/filters";
 import { formatPercent, humanize } from "@/lib/research/format";
-import { buildQuestionViewModels } from "@/lib/research/view-models";
+import { CompletionChart } from "@/components/charts";
+import {
+  buildQuestionSummaries,
+  buildQuestionViewModels,
+} from "@/lib/research/view-models";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +31,11 @@ export default async function QuestionsPage({
   const construct = text(params.construct);
   const responseType = text(params.responseType);
   const coverage = text(params.coverage);
-  const questions = buildQuestionViewModels(participants).filter(
+  // Merged across questionnaire versions: a visitor thinks in terms of "Q5",
+  // not "Q5 as worded under 1.3.0".
+  const questions = buildQuestionSummaries(
+    buildQuestionViewModels(participants)
+  ).filter(
     (question) =>
       (!construct || question.construct === construct) &&
       (!responseType || question.responseType === responseType) &&
@@ -56,9 +64,6 @@ export default async function QuestionsPage({
       </header>
       <FilterBar filters={filters} />
       <form className="filter-bar" method="get">
-        <input type="hidden" name="stage" value={filters.stage} />
-        <input type="hidden" name="version" value={filters.version} />
-        <input type="hidden" name="mode" value={filters.mode} />
         <label>
           Construct
           <select name="construct" defaultValue={construct}>
@@ -94,10 +99,24 @@ export default async function QuestionsPage({
         </button>
       </form>
       <p className="definition">
-        <strong>Question coverage</strong> = valid stored responses /
-        participants for whom the question was expected. Q7 excludes
-        engineering-only participants from its denominator.
+        <strong>Answered</strong> counts the people who were actually asked each
+        question. Q7 is not asked of participants who work solely in
+        engineering, so they are left out of its total rather than counted as
+        missing.
       </p>
+      <div className="panel">
+        <h2>Answers per question</h2>
+        <CompletionChart
+          rows={questions.map((question) => ({
+            label: question.questionId.toUpperCase(),
+            done: question.responseCount + question.notApplicableCount,
+            total: question.expectedParticipantCount,
+            note: question.wording,
+          }))}
+          caption="Hover a bar for the exact count; hover a label for the full question wording."
+          empty="No questions match these filters."
+        />
+      </div>
       <div className="table-wrap">
         <table>
           <caption>Questions in questionnaire order</caption>
@@ -107,31 +126,25 @@ export default async function QuestionsPage({
               <th>Wording</th>
               <th>Construct</th>
               <th>Response type</th>
-              <th>Version</th>
               <th>Conditional</th>
               <th>Expected</th>
-              <th>Stored</th>
+              <th>Answered</th>
               <th>Not applicable</th>
               <th>Missing</th>
-              <th>Coverage</th>
+              <th>Answered share</th>
             </tr>
           </thead>
           <tbody>
             {questions.map((question) => (
-              <tr
-                key={`${question.questionnaireVersion}:${question.questionId}`}
-              >
+              <tr key={question.questionId}>
                 <td>
-                  <Link
-                    href={`/questions/${question.questionId}?stage=${filters.stage}&mode=${filters.mode}&version=${question.questionnaireVersion}`}
-                  >
+                  <Link href={`/questions/${question.questionId}`}>
                     {question.questionId}
                   </Link>
                 </td>
                 <td>{question.wording}</td>
                 <td>{humanize(question.construct)}</td>
                 <td>{humanize(question.responseType)}</td>
-                <td>{question.questionnaireVersion}</td>
                 <td>{question.conditional ? "Yes" : "No"}</td>
                 <td>{question.expectedParticipantCount}</td>
                 <td>{question.responseCount}</td>

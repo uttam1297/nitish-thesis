@@ -3,30 +3,41 @@ import { describe, expect, it } from "vitest";
 import { parseDashboardFilters } from "./filters";
 
 describe("dashboard URL filters", () => {
-  it("defaults to main and rejects arbitrary query syntax", () => {
+  it("rejects arbitrary query syntax", () => {
     expect(parseDashboardFilters({})).toMatchObject({
-      stage: "main",
-      mode: "all",
       status: "all",
+      completeness: "all",
+      search: "",
     });
     expect(
-      parseDashboardFilters({ stage: "main.eq.pilot", status: "drop table" })
-    ).toMatchObject({ stage: "main", status: "all" });
+      parseDashboardFilters({ status: "drop table", completeness: "' or 1=1" })
+    ).toMatchObject({ status: "all", completeness: "all" });
   });
 
   it("accepts bounded public values", () => {
     expect(
       parseDashboardFilters({
-        stage: "pilot",
-        mode: "live_interview",
         status: "completed",
-        version: "1.3.0",
+        completeness: "incomplete",
+        search: "P007",
       })
     ).toMatchObject({
-      stage: "pilot",
-      mode: "live_interview",
       status: "completed",
-      version: "1.3.0",
+      completeness: "incomplete",
+      search: "P007",
     });
+  });
+
+  it("ignores study stage, questionnaire version and collection mode", () => {
+    // These are internal research metadata: a crafted URL must not
+    // reintroduce a hidden scope the page does not show.
+    const filters = parseDashboardFilters({
+      stage: "pilot",
+      version: "1.3.0",
+      mode: "live_interview",
+    });
+    expect(filters).not.toHaveProperty("stage");
+    expect(filters).not.toHaveProperty("version");
+    expect(filters).not.toHaveProperty("mode");
   });
 });

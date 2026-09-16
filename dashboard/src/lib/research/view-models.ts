@@ -280,17 +280,89 @@ export function buildQuestionViewModels(
   });
 }
 
-export function filterParticipantsByStage(
-  participants: readonly ParticipantViewModel[],
-  stage: "main" | "pilot" | "all" = "main"
-): ParticipantViewModel[] {
-  return stage === "all"
-    ? [...participants]
-    : participants.filter((participant) => participant.studyStage === stage);
+export type QuestionSummary = Readonly<{
+  questionId: string;
+  wording: string;
+  hint?: string;
+  construct: string;
+  responseType: string;
+  conditional: boolean;
+  expectedParticipantCount: number;
+  responseCount: number;
+  notApplicableCount: number;
+  missingCount: number;
+  coverage: number;
+  /** Which questionnaire versions asked this question, newest first. */
+  questionnaireVersions: readonly string[];
+  responses: readonly Readonly<{
+    participantCode: string;
+    response: ResponseViewModel;
+  }>[];
+}>;
+
+/**
+ * One row per question, merged across questionnaire versions.
+ *
+ * Internally a question exists once per version, because wording has to stay
+ * pinned to what each participant actually saw. A dashboard visitor thinks in
+ * terms of "Q5", not "Q5 as asked under 1.3.0", so the versions are summed
+ * here and the newest wording is shown. Version detail stays available on the
+ * Data Structure page.
+ */
+export function buildQuestionSummaries(
+  questions: readonly QuestionViewModel[]
+): QuestionSummary[] {
+  const order = questionDisplayOrder();
+  const merged = new Map<string, QuestionSummary>();
+
+  for (const question of questions) {
+    const existing = merged.get(question.questionId);
+    if (!existing) {
+      const { questionnaireVersion, ...rest } = question;
+      merged.set(question.questionId, {
+        ...rest,
+        questionnaireVersions: [questionnaireVersion],
+      });
+      continue;
+    }
+    const expectedParticipantCount =
+      existing.expectedParticipantCount + question.expectedParticipantCount;
+    const responseCount = existing.responseCount + question.responseCount;
+    const notApplicableCount =
+      existing.notApplicableCount + question.notApplicableCount;
+    merged.set(question.questionId, {
+      ...existing,
+      expectedParticipantCount,
+      responseCount,
+      notApplicableCount,
+      missingCount: existing.missingCount + question.missingCount,
+      coverage: expectedParticipantCount
+        ? (responseCount + notApplicableCount) / expectedParticipantCount
+        : 0,
+      questionnaireVersions: [
+        ...existing.questionnaireVersions,
+        question.questionnaireVersion,
+      ],
+      responses: [...existing.responses, ...question.responses],
+    });
+  }
+
+  return [...merged.values()].sort(
+    (a, b) =>
+      (order.indexOf(a.questionId) + 1 || order.length) -
+      (order.indexOf(b.questionId) + 1 || order.length)
+  );
 }
 
-export function expectedQuestionCount(roles: readonly string[]): 15 | 16 {
-  return roles.length === 1 && roles[0] === "engineering" ? 15 : 16;
+/** Questionnaire order, newest version first so current questions lead. */
+export function questionDisplayOrder(): string[] {
+  const ids: string[] = [];
+  for (const version of [...supportedQuestionnaireVersions].reverse()) {
+    for (const questionId of getQuestionnaire(version).questionIds) {
+      if (!ids.includes(questionId)) ids.push(questionId);
+    }
+  }
+  return ids;
 }
 
 export function isKnownQuestionId(value: string): value is CurrentQuestionId {
