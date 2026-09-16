@@ -92,7 +92,8 @@ export default async function SessionDetailPage({
                   className="border-t pt-3 first:border-0 first:pt-0"
                 >
                   <p className="text-xs text-muted-foreground">
-                    {getQuestion(item.questionId)?.title ?? `${item.questionId} (removed)`}
+                    {getQuestion(item.questionId)?.title ??
+                      `${item.questionId} (removed)`}
                   </p>
                   <p className="text-sm whitespace-pre-wrap">
                     {formatStoredValue(item.responseValue)}
@@ -119,7 +120,8 @@ function formatStoredValue(value: unknown): string {
     | { kind: "choice"; value: string }
     | { kind: "choices"; values: string[] }
     | { kind: "scale"; value: number }
-    | { kind: "ranking"; order: string[] };
+    | { kind: "ranking"; order: string[] }
+    | { kind: "not_applicable"; reason: "not_applicable" };
 
   switch (answer.kind) {
     case "text":
@@ -132,6 +134,8 @@ function formatStoredValue(value: unknown): string {
       return String(answer.value);
     case "ranking":
       return answer.order.join(" > ");
+    case "not_applicable":
+      return "Not applicable to participant experience";
     default:
       return JSON.stringify(value);
   }

@@ -118,6 +118,7 @@ export const interviewQuestionSchema = z.discriminatedUnion("responseType", [
     placeholder: z.string().min(1).optional(),
     allowVoice: z.boolean(),
     allowText: z.boolean(),
+    allowNotApplicable: z.boolean().optional(),
     validation: textValidationSchema.optional(),
   }),
   baseQuestionSchema.extend({

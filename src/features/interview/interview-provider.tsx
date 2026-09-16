@@ -81,6 +81,7 @@ interface InterviewProviderProps {
   interviewRepository?: InterviewRepository;
   /** Milliseconds to wait after a change before writing the draft. */
   autosaveDelayMs?: number;
+  onStartOver?: () => void;
 }
 
 /**
@@ -94,6 +95,7 @@ export function InterviewProvider({
   draftStorage = defaultDraftStorage,
   interviewRepository = defaultInterviewRepository,
   autosaveDelayMs = 400,
+  onStartOver,
 }: InterviewProviderProps) {
   const [state, dispatch] = useReducer(
     (current: InterviewState, action: Parameters<typeof interviewReducer>[1]) =>
@@ -158,7 +160,8 @@ export function InterviewProvider({
   const startOver = useCallback(() => {
     draftStorage.clear();
     setDraftDismissed(true);
-  }, [draftStorage]);
+    onStartOver?.();
+  }, [draftStorage, onStartOver]);
 
   // Multi-tab safety, kept deliberately simple: a `storage` event for the
   // draft key only ever fires in a tab that did *not* make the write, so

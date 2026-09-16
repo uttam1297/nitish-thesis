@@ -1,9 +1,13 @@
 import type { ParticipantViewModel } from "./view-models";
 
+/**
+ * Filters the dashboard exposes to visitors. Study stage, questionnaire
+ * version and collection mode are deliberately absent: they are internal
+ * research-system metadata, and every record is shown as one dataset. Both
+ * fields are still read from Supabase and still drive per-session question
+ * mapping — they are simply not visitor-facing controls.
+ */
 export type DashboardFilters = Readonly<{
-  stage: "main" | "pilot" | "all";
-  version: string;
-  mode: "all" | "asynchronous_form" | "live_interview";
   status: "all" | ParticipantViewModel["status"];
   search: string;
   role: string;
@@ -20,17 +24,9 @@ function single(value: string | string[] | undefined): string {
 }
 
 export function parseDashboardFilters(params: SearchParams): DashboardFilters {
-  const stage = single(params.stage);
-  const mode = single(params.mode);
   const status = single(params.status);
   const completeness = single(params.completeness);
   return {
-    stage: stage === "pilot" || stage === "all" ? stage : "main",
-    version: /^\d+\.\d+\.\d+$/.test(single(params.version))
-      ? single(params.version)
-      : "all",
-    mode:
-      mode === "asynchronous_form" || mode === "live_interview" ? mode : "all",
     status:
       status === "started" ||
       status === "in_progress" ||
@@ -57,10 +53,6 @@ export function applyParticipantFilters(
   const search = filters.search.toLocaleLowerCase();
   return participants.filter(
     (participant) =>
-      (filters.stage === "all" || participant.studyStage === filters.stage) &&
-      (filters.version === "all" ||
-        participant.questionnaireVersion === filters.version) &&
-      (filters.mode === "all" || participant.responseMode === filters.mode) &&
       (filters.status === "all" || participant.status === filters.status) &&
       (!search ||
         participant.participantCode.toLocaleLowerCase().includes(search)) &&

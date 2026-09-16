@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "motion/react";
+import { useEffect, useState } from "react";
 
 import { CompletionBackdrop } from "@/components/illustration/completion-backdrop";
 import { ProgressIndicator } from "@/components/interview/progress-indicator";
@@ -18,6 +19,8 @@ import {
 } from "@/features/interview/interview-provider";
 import { useServerSync } from "@/features/interview/use-server-sync";
 import type { Step } from "@/domain/interview/types";
+import { getQuestionnaire, QUESTIONNAIRE_VERSION } from "@/config/interview";
+import { draftStorage } from "@/lib/persistence/draft-storage";
 
 function StepView({
   step,
@@ -59,9 +62,7 @@ export function InterviewFlow() {
     currentStep.kind === "review" ||
     currentStep.kind === "complete";
 
-  const questionSteps = interview.timeline.filter(
-    (s) => s.kind === "question"
-  );
+  const questionSteps = interview.timeline.filter((s) => s.kind === "question");
   const questionIndex =
     currentStep.kind === "question"
       ? questionSteps.findIndex((s) => s.id === currentStep.id) + 1
@@ -102,8 +103,37 @@ export function InterviewFlow() {
 }
 
 export function InterviewEngine() {
+  const [version, setVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    const draftVersion = draftStorage.load()?.questionnaireVersion;
+    // localStorage is unavailable during SSR, so the version must be selected
+    // after hydration to keep the first server/client render identical.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVersion(
+      draftVersion && getQuestionnaire(draftVersion)
+        ? draftVersion
+        : QUESTIONNAIRE_VERSION
+    );
+  }, []);
+
+  if (!version) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center px-4">
+        <p className="text-sm text-muted-foreground">Loading interview…</p>
+      </main>
+    );
+  }
+
+  const selectedQuestionnaire =
+    getQuestionnaire(version) ?? getQuestionnaire(QUESTIONNAIRE_VERSION)!;
+
   return (
-    <InterviewProvider>
+    <InterviewProvider
+      key={selectedQuestionnaire.version}
+      questionnaire={selectedQuestionnaire}
+      onStartOver={() => setVersion(QUESTIONNAIRE_VERSION)}
+    >
       <InterviewFlow />
     </InterviewProvider>
   );

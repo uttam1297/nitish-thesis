@@ -113,7 +113,9 @@ export function useServerSync(interview: InterviewContextValue) {
           consent: {
             consentVersion: state.consent.consentVersion,
             participationConsent: true,
-            voiceInputConsent: state.consent.granted,
+            // 1.5.0 removed voice input, so there is no voice capture to
+            // consent to on the asynchronous form.
+            voiceInputConsent: false,
             recordingConsent: false,
           },
         });

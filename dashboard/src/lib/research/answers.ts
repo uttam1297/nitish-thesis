@@ -4,7 +4,8 @@ export type ValidAnswer =
   | Readonly<{ kind: "choice"; value: string; otherText?: string }>
   | Readonly<{ kind: "choices"; values: readonly string[]; otherText?: string }>
   | Readonly<{ kind: "scale"; value: number }>
-  | Readonly<{ kind: "text"; text: string }>;
+  | Readonly<{ kind: "text"; text: string }>
+  | Readonly<{ kind: "not_applicable"; reason: "not_applicable" }>;
 
 export type AnswerValidation =
   | Readonly<{ valid: true; answer: ValidAnswer }>
@@ -88,6 +89,18 @@ export function validateResponseValue(
   }
 
   if (
+    question.responseType === "voice_or_text" &&
+    question.allowNotApplicable &&
+    value.kind === "not_applicable" &&
+    value.reason === "not_applicable"
+  ) {
+    return {
+      valid: true,
+      answer: { kind: "not_applicable", reason: "not_applicable" },
+    };
+  }
+
+  if (
     value.kind !== "text" ||
     typeof value.text !== "string" ||
     value.text.trim().length <
@@ -132,6 +145,9 @@ export function answerToReadable(
     return question.responseType === "likert_scale"
       ? `${answer.value} of ${question.scale.maximum}`
       : String(answer.value);
+  }
+  if (answer.kind === "not_applicable") {
+    return "Not applicable to participant experience";
   }
   return answer.text;
 }

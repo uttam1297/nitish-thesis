@@ -1,4 +1,4 @@
-import { isAnswered, isResolved } from "@/domain/interview/answers";
+import { isResolved } from "@/domain/interview/answers";
 import { isQuestionVisible } from "@/domain/interview/conditions";
 import type {
   InterviewQuestion,
@@ -158,6 +158,6 @@ export function unansweredRequiredQuestions(
   responses: ResponseMap
 ): InterviewQuestion[] {
   return visibleQuestions(questionnaire, responses).filter(
-    (question) => question.required && !isAnswered(responses[question.id])
+    (question) => question.required && !isResolved(responses[question.id])
   );
 }

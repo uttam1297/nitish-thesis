@@ -1,6 +1,8 @@
 import { FilterBar } from "./filter-bar";
 import type { DashboardFilters } from "@/lib/research/filters";
 
+export type RoleOption = Readonly<{ value: string; label: string }>;
+
 export function ParticipantFilters({
   filters,
   roles,
@@ -8,7 +10,8 @@ export function ParticipantFilters({
   experiences,
 }: {
   filters: DashboardFilters;
-  roles: readonly string[];
+  /** Stored slug plus the label the participant actually saw on the form. */
+  roles: readonly RoleOption[];
   industries: readonly string[];
   experiences: readonly string[];
 }) {
@@ -16,16 +19,15 @@ export function ParticipantFilters({
     <>
       <FilterBar filters={filters} showSearch showStatus />
       <form className="filter-bar" method="get">
-        <input type="hidden" name="stage" value={filters.stage} />
-        <input type="hidden" name="version" value={filters.version} />
-        <input type="hidden" name="mode" value={filters.mode} />
         <input type="hidden" name="status" value={filters.status} />
         <label>
           Role
           <select name="role" defaultValue={filters.role}>
             <option value="">All roles</option>
-            {roles.map((value) => (
-              <option key={value}>{value}</option>
+            {roles.map((role) => (
+              <option key={role.value} value={role.value}>
+                {role.label}
+              </option>
             ))}
           </select>
         </label>

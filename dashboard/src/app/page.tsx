@@ -1,5 +1,5 @@
-import { Distribution, MetricCard } from "@/components/data-display";
-import { FilterBar } from "@/components/filter-bar";
+import { BarChart, CompletionChart, TrendChart } from "@/components/charts";
+import { MetricCard } from "@/components/data-display";
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import {
   calculateDatasetMetrics,
@@ -10,9 +10,13 @@ import {
   applyParticipantFilters,
   parseDashboardFilters,
 } from "@/lib/research/filters";
-import { formatPercent, formatTimestamp } from "@/lib/research/format";
+import { formatTimestamp } from "@/lib/research/format";
 
 export const dynamic = "force-dynamic";
+
+const PARTICIPANT_COLOUR = "#215c51";
+const RESPONSE_COLOUR = "#c07c2c";
+const COMPLETION_COLOUR = "#2f6f9f";
 
 export default async function OverviewPage({
   searchParams,
@@ -30,6 +34,34 @@ export default async function OverviewPage({
   const title =
     data.snapshot.studies[0]?.title ?? "B2C AI-mediated discovery study";
 
+  const trajectory = metrics.trajectory;
+  const series = [
+    {
+      name: "Participants started",
+      colour: PARTICIPANT_COLOUR,
+      points: trajectory.map((point) => ({
+        date: point.date,
+        value: point.cumulativeParticipants,
+      })),
+    },
+    {
+      name: "Answers recorded",
+      colour: RESPONSE_COLOUR,
+      points: trajectory.map((point) => ({
+        date: point.date,
+        value: point.cumulativeResponses,
+      })),
+    },
+    {
+      name: "Interviews finished",
+      colour: COMPLETION_COLOUR,
+      points: trajectory.map((point) => ({
+        date: point.date,
+        value: point.cumulativeCompletions,
+      })),
+    },
+  ];
+
   return (
     <main className="page">
       <header className="page-header">
@@ -37,121 +69,148 @@ export default async function OverviewPage({
           <p className="eyebrow">Master&apos;s thesis research</p>
           <h1>What data do we have?</h1>
           <p className="lede">
-            {title}. A read-only, descriptive view of collection progress and
-            coverage.
+            {title}. A read-only view of everything collected through the
+            interview form so far.
           </p>
         </div>
         <p className="muted small">
-          Questionnaire 1.3.0
-          <br />
           Last refreshed {formatTimestamp(data.snapshot.refreshedAt, timezone)}
         </p>
       </header>
-      <FilterBar filters={filters} />
-      <p className="definition">
-        <strong>Scope:</strong>{" "}
-        {filters.stage === "main"
-          ? "Main study only"
-          : filters.stage === "pilot"
-            ? "Pilot/test data only"
-            : "Main and pilot combined"}
-        . Pilot data is never silently included in the default main-study view.
-      </p>
+
       <section aria-labelledby="headline">
-        <h2 id="headline">Collection status</h2>
+        <h2 id="headline">The dataset at a glance</h2>
         <div className="card-grid">
           <MetricCard
-            label="Total participants"
+            label="People taking part"
             value={metrics.totalParticipants}
-            detail="Sessions in the selected scope"
+            detail="One interview session each"
           />
           <MetricCard
-            label="Completed"
+            label="Finished interviews"
             value={metrics.completedSessions}
-            detail="Not the same as total participants"
+            detail={`${metrics.inProgressSessions} still in progress`}
           />
           <MetricCard
-            label="In progress"
-            value={metrics.inProgressSessions}
-            detail="Started or actively progressing"
+            label="Answers collected"
+            value={metrics.storedResponses}
+            detail="Individual questions answered"
           />
           <MetricCard
-            label="Withdrawn"
-            value={metrics.withdrawnSessions}
-            detail="Retained as audit records"
+            label="Still unanswered"
+            value={metrics.missingResponses}
+            detail="Questions asked but not yet answered"
           />
         </div>
       </section>
-      <section className="two-column" aria-label="Coverage metrics">
+
+      <section aria-labelledby="trajectory">
+        <h2 id="trajectory">How the dataset is growing</h2>
         <div className="panel">
-          <h2>Dataset coverage</h2>
-          <strong className="value">
-            {formatPercent(metrics.datasetCoverage)}
-          </strong>
-          <p>
-            {metrics.storedResponses} valid stored responses /{" "}
-            {metrics.expectedResponses} expected responses.
-          </p>
-          <p className="muted small">
-            The denominator respects routing, including Q7 not being expected
-            for engineering-only participants, and excludes withdrawn sessions.
-          </p>
-        </div>
-        <div className="panel">
-          <h2>Study stages</h2>
-          <Distribution items={metrics.stageDistribution} />
+          <TrendChart
+            series={series}
+            caption="Running totals by day. Hover a point for its exact value. A flat line means no new data that day."
+          />
         </div>
       </section>
-      <section>
-        <h2>Participant profile distributions</h2>
+
+      <section aria-labelledby="composition">
+        <h2 id="composition">Who is taking part</h2>
         <div className="two-column">
           <div className="panel">
             <h3>Professional responsibility</h3>
-            <Distribution items={metrics.roleDistribution} />
-            <p className="muted small">
-              Multi-role participants count once in every selected role, so
-              percentages may total more than 100%.
-            </p>
+            <BarChart
+              data={metrics.roleDistribution.map((item) => ({
+                label: item.label,
+                value: item.count,
+                percentage: item.percentage,
+              }))}
+              caption="From each participant's own Q1 answer. People may choose more than one area, so the percentages can add up to more than 100%."
+            />
           </div>
           <div className="panel">
             <h3>Industry</h3>
-            <Distribution items={metrics.industryDistribution} />
+            <BarChart
+              data={metrics.industryDistribution.map((item) => ({
+                label: item.label,
+                value: item.count,
+                percentage: item.percentage,
+              }))}
+            />
           </div>
           <div className="panel">
-            <h3>Experience</h3>
-            <Distribution items={metrics.experienceDistribution} />
+            <h3>Years of experience</h3>
+            <BarChart
+              data={metrics.experienceDistribution.map((item) => ({
+                label: item.label,
+                value: item.count,
+                percentage: item.percentage,
+              }))}
+              caption="Shown from least to most experienced rather than by size."
+            />
           </div>
           <div className="panel">
-            <h3>Discovery closeness</h3>
-            <Distribution items={metrics.closenessDistribution} />
+            <h3>Closeness to customer discovery</h3>
+            <BarChart
+              data={metrics.closenessDistribution.map((item) => ({
+                label: item.label,
+                value: item.count,
+                percentage: item.percentage,
+              }))}
+              caption="Self-rated on a 1-5 scale, where 5 is 'very closely'."
+            />
           </div>
         </div>
       </section>
-      <section className="two-column">
+
+      <section aria-labelledby="question-completion">
+        <h2 id="question-completion">How many people answered each question</h2>
         <div className="panel">
-          <h2>Collection timeline</h2>
-          {metrics.timeline.length ? (
-            <ul className="bar-list">
-              {metrics.timeline.map((item) => (
-                <li className="bar-row" key={item.date}>
-                  <span>{item.date}</span>
-                  <span className="bar-track" aria-hidden="true">
-                    <span
-                      style={{ width: `${Math.min(item.count * 20, 100)}%` }}
-                    />
-                  </span>
-                  <strong>{item.count}</strong>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="empty">No data collected for this scope.</p>
+          <CompletionChart
+            rows={metrics.questionCompletion.map((item) => ({
+              label: item.label,
+              done: item.resolved,
+              total: item.expected,
+              note: item.conditional
+                ? "Only asked of some participants, so its total is lower."
+                : undefined,
+            }))}
+            caption="Each total counts only the people who were actually asked that question. Q7 is skipped for participants who work solely in engineering, so it is never counted as missing for them."
+          />
+        </div>
+      </section>
+
+      <section aria-labelledby="participant-completion">
+        <h2 id="participant-completion">How far each person has got</h2>
+        <div className="panel">
+          <CompletionChart
+            rows={metrics.participantCompletion.map((item) => ({
+              label: item.participantCode,
+              done: item.answered,
+              total: item.expected,
+            }))}
+            caption="Answered out of the questions asked of that person. Totals differ because the questionnaire skips some questions depending on earlier answers."
+          />
+        </div>
+      </section>
+
+      <section className="two-column" aria-label="Recent activity">
+        <div className="panel">
+          <h2>Recent activity</h2>
+          <p>
+            Last answer saved{" "}
+            <strong>{formatTimestamp(metrics.latestActivity, timezone)}</strong>
+            .
+          </p>
+          {trajectory.length > 0 && (
+            <p className="muted small">
+              Collection started {trajectory[0].date}. Most recent activity on{" "}
+              {trajectory.at(-1)?.date}.
+            </p>
           )}
         </div>
         <div className="panel">
-          <h2>Latest activity</h2>
-          <p>{formatTimestamp(metrics.latestActivity, timezone)}</p>
-          <h3>Data quality</h3>
+          <h2>Data quality</h2>
           {integrity.length ? (
             <ul>
               {integrity.map((item) => (
@@ -162,7 +221,8 @@ export default async function OverviewPage({
             </ul>
           ) : (
             <p className="muted">
-              No deterministic integrity warnings in this scope.
+              No duplicate participant codes, duplicate answers, orphaned rows
+              or unreadable values were found.
             </p>
           )}
         </div>

@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-import { ParticipantFilters } from "@/components/participant-filters";
+import {
+  ParticipantFilters,
+  type RoleOption,
+} from "@/components/participant-filters";
+import { getQuestion } from "@/lib/research-metadata";
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import { getDashboardData } from "@/lib/research/dashboard-data";
 import {
@@ -26,6 +30,21 @@ export default async function ParticipantsPage({
   const { timezone } = getDashboardConfig();
   const unique = (values: string[]) =>
     [...new Set(values.filter(Boolean))].sort();
+  // Roles are stored as slugs ("digital-strategy"); the filter shows the
+  // wording the participant actually chose from.
+  const q1 = getQuestion("1.5.0", "q1");
+  const roleOptions: RoleOption[] = unique(
+    allParticipants.flatMap((item) => [...item.roles])
+  ).map((value) => ({
+    value,
+    label:
+      value === "__other__"
+        ? "Other"
+        : q1?.responseType === "multi_select"
+          ? (q1.options.find((option) => option.value === value)?.label ??
+            value)
+          : value,
+  }));
 
   return (
     <main className="page">
@@ -42,13 +61,13 @@ export default async function ParticipantsPage({
       </header>
       <ParticipantFilters
         filters={filters}
-        roles={unique(allParticipants.flatMap((item) => [...item.roles]))}
+        roles={roleOptions}
         industries={unique(allParticipants.map((item) => item.industry))}
         experiences={unique(allParticipants.map((item) => item.experience))}
       />
       <div className="table-wrap">
         <table>
-          <caption>Participant sessions in the selected scope</caption>
+          <caption>Everyone who has started the interview</caption>
           <thead>
             <tr>
               <th>Participant</th>
@@ -56,8 +75,6 @@ export default async function ParticipantsPage({
               <th>Profile</th>
               <th>Status</th>
               <th>Progress</th>
-              <th>Stage / mode</th>
-              <th>Questionnaire</th>
               <th>Started</th>
               <th>Last activity</th>
             </tr>
@@ -76,7 +93,7 @@ export default async function ParticipantsPage({
                 </td>
                 <td>
                   {participant.responses.find(
-                    (response) => response.question.id === "q1",
+                    (response) => response.question.id === "q1"
                   )?.readableAnswer ?? "Not recorded"}
                 </td>
                 <td>
@@ -100,14 +117,6 @@ export default async function ParticipantsPage({
                     {formatPercent(participant.coverage)}
                   </span>
                 </td>
-                <td>
-                  {humanize(participant.studyStage)}
-                  <br />
-                  <span className="muted">
-                    {humanize(participant.responseMode)}
-                  </span>
-                </td>
-                <td>{participant.questionnaireVersion}</td>
                 <td>{formatTimestamp(participant.startedAt, timezone)}</td>
                 <td>{formatTimestamp(participant.lastActivityAt, timezone)}</td>
               </tr>

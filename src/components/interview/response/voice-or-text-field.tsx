@@ -24,6 +24,9 @@ export function VoiceOrTextField({
   invalid,
 }: ResponseFieldProps<"voice_or_text">) {
   const answerId = useId();
+  const notApplicableId = useId();
+  const isNotApplicable = value.kind === "not_applicable";
+  const text = value.kind === "text" ? value.text : "";
   const voice = useVoiceInput({
     onCapture: (text) => {
       onChange(
@@ -36,7 +39,8 @@ export function VoiceOrTextField({
     },
   });
 
-  const showVoice = question.allowVoice && voice.state !== "unsupported";
+  const showVoice =
+    question.allowVoice && !isNotApplicable && voice.state !== "unsupported";
 
   return (
     <div role="group" aria-labelledby={labelledBy} className="grid gap-3">
@@ -62,7 +66,8 @@ export function VoiceOrTextField({
         <Label htmlFor={answerId}>Your answer</Label>
         <TextArea
           id={answerId}
-          value={value.text}
+          value={text}
+          disabled={isNotApplicable}
           className="min-h-28"
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
@@ -70,20 +75,54 @@ export function VoiceOrTextField({
           onChange={(event) =>
             onChange(
               { kind: "text", text: event.target.value },
-              value.text && voice.state === "completed"
-                ? "voice_edited"
-                : "typed"
+              text && voice.state === "completed" ? "voice_edited" : "typed"
             )
           }
         />
       </div>
 
-      {voice.state === "completed" && (
+      {question.allowNotApplicable && (
+        <div className="rounded-md border bg-surface-subtle px-3 py-3">
+          <label
+            htmlFor={notApplicableId}
+            className="flex cursor-pointer items-start gap-3 text-sm"
+          >
+            <input
+              id={notApplicableId}
+              type="checkbox"
+              checked={isNotApplicable}
+              className="mt-0.5 size-4 accent-primary"
+              onChange={(event) =>
+                onChange(
+                  event.target.checked
+                    ? {
+                        kind: "not_applicable",
+                        reason: "not_applicable",
+                      }
+                    : { kind: "text", text: "" },
+                  "selected"
+                )
+              }
+            />
+            <span>
+              <span className="font-medium">
+                This question is not applicable to my experience.
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Select this only when you cannot answer from your professional
+                experience.
+              </span>
+            </span>
+          </label>
+        </div>
+      )}
+
+      {!isNotApplicable && voice.state === "completed" && (
         <StatusMessage variant="success">
           Transcript added. You can edit the text before continuing.
         </StatusMessage>
       )}
-      {voice.state === "error" && voice.errorMessage && (
+      {!isNotApplicable && voice.state === "error" && voice.errorMessage && (
         <StatusMessage variant="warning">{voice.errorMessage}</StatusMessage>
       )}
     </div>

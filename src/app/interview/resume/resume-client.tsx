@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { StatusMessage } from "@/components/feedback/status-message";
 import { Surface } from "@/components/ui/surface";
-import { questionnaire } from "@/config/interview";
+import { getQuestionnaire } from "@/config/interview";
 import { buildTimeline, resolveStepId } from "@/domain/interview/flow";
 import { createInitialState } from "@/domain/interview/reducer";
 import type { AnswerValue, InterviewState } from "@/domain/interview/types";
@@ -34,14 +34,17 @@ export function ResumeClient({ token }: ResumeClientProps) {
       .then((result) => {
         if (cancelled) return;
 
-        if (result.session.questionnaireVersion !== questionnaire.version) {
+        const sessionQuestionnaire = getQuestionnaire(
+          result.session.questionnaireVersion
+        );
+        if (!sessionQuestionnaire) {
           setFetchError(
             "This session was started under an earlier version of the questionnaire and can't be resumed automatically. Please contact the researcher."
           );
           return;
         }
 
-        const base: InterviewState = createInitialState(questionnaire);
+        const base: InterviewState = createInitialState(sessionQuestionnaire);
         const responses: InterviewState["responses"] = {};
         for (const response of result.responses) {
           try {
@@ -80,7 +83,7 @@ export function ResumeClient({ token }: ResumeClientProps) {
           ...base,
           questionnaireVersion: result.session.questionnaireVersion,
           currentStepId: resolveStepId(
-            buildTimeline(questionnaire, mergedResponses),
+            buildTimeline(sessionQuestionnaire, mergedResponses),
             result.session.currentQuestionId || base.currentStepId
           ),
           responses: mergedResponses,

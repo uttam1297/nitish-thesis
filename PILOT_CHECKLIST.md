@@ -21,9 +21,9 @@ below.
    so judge this from actual `completed_at - started_at` durations in
    `sessions` instead.)_
 4. Were any questions confusing?
-5. Were any questions repetitive? _(Q10/Q11 are intentionally identical —
-   see README — don't flag that pair unless participants found it
-   confusing rather than just repetitive.)_
+5. Were any questions repetitive? _(Q11 repeated Q10 verbatim and was
+   retired in questionnaire 1.5.0, along with Q16. Responses collected for
+   them under 1.3.0/1.4.0 are still in the database.)_
 6. Did MCQ options cover participants' situations, or did they need
    "Other" often?
 7. Was "Other" selected unusually often? Query `responses` for `q1` rows
@@ -32,9 +32,9 @@ below.
    at all in `responses` for that (session, question) pair — cross-
    reference against the full question list per session.
 9. Were written answers sufficiently detailed for the research questions?
-10. Did voice input work reliably? Ask participants directly — the
-    database doesn't retain "typed vs. spoken" per response today.
-11. Were transcripts accurate enough after the participant's own edits?
+10. _(Retired: voice input was removed in questionnaire 1.5.0, so there is
+    no longer a microphone to ask participants about.)_
+11. _(Retired with voice input — no transcripts to assess.)_
 12. Did participants lose any responses? Compare local reports against
     what actually landed in `responses` — a duplicate-row or a missing
     row would show up here (the `UNIQUE(session_id, question_id)`

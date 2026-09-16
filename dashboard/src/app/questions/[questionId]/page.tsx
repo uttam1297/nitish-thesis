@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { Distribution, MetricCard } from "@/components/data-display";
+import { BarChart } from "@/components/charts";
+import { MetricCard } from "@/components/data-display";
 import { FilterBar } from "@/components/filter-bar";
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import { getQuestion } from "@/lib/research-metadata";
@@ -12,6 +13,7 @@ import {
 } from "@/lib/research/filters";
 import { formatPercent, humanize } from "@/lib/research/format";
 import {
+  buildQuestionSummaries,
   buildQuestionViewModels,
   isKnownQuestionId,
 } from "@/lib/research/view-models";
@@ -29,11 +31,13 @@ export default async function QuestionDetailPage({
   if (!isKnownQuestionId(questionId)) notFound();
   const filters = parseDashboardFilters(await searchParams);
   const data = await getDashboardData();
-  const question = buildQuestionViewModels(
-    applyParticipantFilters(data.participants, filters)
+  const question = buildQuestionSummaries(
+    buildQuestionViewModels(applyParticipantFilters(data.participants, filters))
   ).find((item) => item.questionId === questionId);
   if (!question) notFound();
-  const metadata = getQuestion("1.3.0", questionId);
+  // Metadata is read from the newest questionnaire that still asks the
+  // question, which is the wording a visitor sees on the live form.
+  const metadata = getQuestion(question.questionnaireVersions[0], questionId);
   if (!metadata) notFound();
   const config = getDashboardConfig();
   const narrative = metadata.responseType === "voice_or_text";
@@ -56,13 +60,17 @@ export default async function QuestionDetailPage({
       <FilterBar filters={filters} />
       <section className="card-grid">
         <MetricCard
-          label="Expected participants"
+          label="People asked"
           value={question.expectedParticipantCount}
         />
-        <MetricCard label="Stored responses" value={question.responseCount} />
-        <MetricCard label="Missing responses" value={question.missingCount} />
+        <MetricCard label="Answered" value={question.responseCount} />
         <MetricCard
-          label="Question coverage"
+          label="Not applicable"
+          value={question.notApplicableCount}
+        />
+        <MetricCard label="Not yet answered" value={question.missingCount} />
+        <MetricCard
+          label="Answered share"
           value={formatPercent(question.coverage)}
         />
       </section>
@@ -71,10 +79,6 @@ export default async function QuestionDetailPage({
         <dl>
           <dt>Construct</dt>
           <dd>{humanize(question.construct)}</dd>
-          <dt>Questionnaire version</dt>
-          <dd>1.3.0</dd>
-          <dt>Question version</dt>
-          <dd>{metadata.questionVersion}</dd>
           <dt>Required</dt>
           <dd>{metadata.required ? "Yes" : "No"}</dd>
           <dt>Conditional behaviour</dt>
@@ -88,7 +92,7 @@ export default async function QuestionDetailPage({
             {metadata.responseType === "likert_scale"
               ? `${metadata.scale.minimum}–${metadata.scale.maximum} integer scale`
               : metadata.responseType === "voice_or_text"
-                ? `At least ${metadata.validation.minimumNonWhitespaceCharacters} non-whitespace characters`
+                ? `At least ${metadata.validation.minimumNonWhitespaceCharacters} non-whitespace characters${metadata.allowNotApplicable ? ", or explicitly marked not applicable" : ""}`
                 : "Configured questionnaire options"}
           </dd>
         </dl>
@@ -110,7 +114,15 @@ export default async function QuestionDetailPage({
             )}
           </>
         ) : (
-          <Distribution items={categoricalDistribution(question)} />
+          <BarChart
+            data={categoricalDistribution(question).map((item) => ({
+              label: item.label,
+              value: item.count,
+              percentage: item.percentage,
+            }))}
+            valueLabel="answers"
+            caption="How the people who answered this question are spread across the available options."
+          />
         )}
       </section>
       {narrative && config.showNarratives && (

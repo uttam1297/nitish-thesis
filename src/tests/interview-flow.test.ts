@@ -31,7 +31,7 @@ describe("Phase 1 interview flow", () => {
     ]);
     expect(ids.at(-2)).toBe("review");
     expect(ids.at(-1)).toBe("complete");
-    expect(ids.filter((id) => /^q\d+$/.test(id))).toHaveLength(16);
+    expect(ids.filter((id) => /^q\d+$/.test(id))).toHaveLength(14);
   });
 
   it("navigates by stable step id", () => {
@@ -43,14 +43,34 @@ describe("Phase 1 interview flow", () => {
   it("calculates progress and required answers", () => {
     expect(calculateProgress(questionnaire, firstAnswer, "q2")).toMatchObject({
       resolved: 1,
-      total: 16,
-      percent: 6,
+      total: 14,
+      percent: 7,
       position: 2,
     });
-    expect(unansweredRequiredQuestions(questionnaire, {})).toHaveLength(16);
+    expect(unansweredRequiredQuestions(questionnaire, {})).toHaveLength(14);
     expect(
       unansweredRequiredQuestions(questionnaire, firstAnswer)
-    ).toHaveLength(15);
+    ).toHaveLength(13);
+  });
+
+  it("treats an explicit not-applicable narrative as resolved", () => {
+    const responses: ResponseMap = {
+      ...firstAnswer,
+      q5: {
+        questionId: "q5",
+        value: { kind: "not_applicable", reason: "not_applicable" },
+        method: "selected",
+        skipped: false,
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    };
+
+    expect(calculateProgress(questionnaire, responses, "q6").resolved).toBe(2);
+    expect(
+      unansweredRequiredQuestions(questionnaire, responses).map(
+        (question) => question.id
+      )
+    ).not.toContain("q5");
   });
 
   it("removes a conditionally hidden question from the timeline and progress total", () => {
@@ -68,10 +88,10 @@ describe("Phase 1 interview flow", () => {
       (step) => step.id
     );
     expect(ids).not.toContain("q7");
-    expect(ids.filter((id) => /^q\d+$/.test(id))).toHaveLength(15);
+    expect(ids.filter((id) => /^q\d+$/.test(id))).toHaveLength(13);
 
     expect(calculateProgress(questionnaire, engineeringOnly, "q6").total).toBe(
-      15
+      13
     );
   });
 });

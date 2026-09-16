@@ -69,9 +69,6 @@ export default async function ResponsesPage({
       </header>
       <FilterBar filters={filters} showStatus />
       <form className="filter-bar" method="get">
-        <input type="hidden" name="stage" value={filters.stage} />
-        <input type="hidden" name="version" value={filters.version} />
-        <input type="hidden" name="mode" value={filters.mode} />
         <input type="hidden" name="status" value={filters.status} />
         <label>
           Participant
@@ -129,7 +126,6 @@ export default async function ResponsesPage({
               <th>Construct / type</th>
               <th>Readable answer</th>
               <th>Session</th>
-              <th>Stage / mode</th>
               <th>Questionnaire</th>
               <th>Created</th>
               <th>Updated</th>
@@ -165,11 +161,6 @@ export default async function ResponsesPage({
                   )}
                 </td>
                 <td>{humanize(row.sessionStatus)}</td>
-                <td>
-                  {humanize(row.studyStage)}
-                  <br />
-                  <span className="muted">{humanize(row.mode)}</span>
-                </td>
                 <td>{row.questionnaireVersion}</td>
                 <td>{formatTimestamp(row.createdAt, config.timezone)}</td>
                 <td>{formatTimestamp(row.updatedAt, config.timezone)}</td>

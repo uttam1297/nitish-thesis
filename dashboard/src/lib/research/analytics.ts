@@ -1,6 +1,14 @@
-import { getQuestion, getResearchConstruct } from "../research-metadata";
+import {
+  getQuestion,
+  getResearchConstruct,
+  supportedQuestionnaireVersions,
+} from "../research-metadata";
 import type { ResearchDataSnapshot } from "../supabase/rows";
-import type { ParticipantViewModel, QuestionViewModel } from "./view-models";
+import {
+  questionDisplayOrder,
+  type ParticipantViewModel,
+  type QuestionViewModel,
+} from "./view-models";
 
 export type DistributionItem = Readonly<{
   label: string;
@@ -8,25 +16,51 @@ export type DistributionItem = Readonly<{
   percentage: number;
 }>;
 
+/** One day of collection, with running totals for trend charts. */
+export type TrajectoryPoint = Readonly<{
+  date: string;
+  participants: number;
+  responses: number;
+  completions: number;
+  cumulativeParticipants: number;
+  cumulativeResponses: number;
+  cumulativeCompletions: number;
+}>;
+
+/** How many of the people who were asked a question have resolved it. */
+export type QuestionCompletion = Readonly<{
+  questionId: string;
+  label: string;
+  wording: string;
+  resolved: number;
+  expected: number;
+  conditional: boolean;
+}>;
+
+/** How far one participant has got through the questions asked of them. */
+export type ParticipantCompletion = Readonly<{
+  participantCode: string;
+  answered: number;
+  expected: number;
+  status: ParticipantViewModel["status"];
+}>;
+
 export type DatasetMetrics = Readonly<{
   totalParticipants: number;
   completedSessions: number;
   inProgressSessions: number;
   withdrawnSessions: number;
-  mainSessions: number;
-  pilotSessions: number;
   storedResponses: number;
   expectedResponses: number;
-  datasetCoverage: number;
+  missingResponses: number;
   statusDistribution: readonly DistributionItem[];
-  stageDistribution: readonly DistributionItem[];
-  modeDistribution: readonly DistributionItem[];
-  versionDistribution: readonly DistributionItem[];
   roleDistribution: readonly DistributionItem[];
   industryDistribution: readonly DistributionItem[];
   experienceDistribution: readonly DistributionItem[];
   closenessDistribution: readonly DistributionItem[];
-  timeline: readonly Readonly<{ date: string; count: number }>[];
+  trajectory: readonly TrajectoryPoint[];
+  questionCompletion: readonly QuestionCompletion[];
+  participantCompletion: readonly ParticipantCompletion[];
   latestActivity: string | null;
 }>;
 
@@ -54,6 +88,159 @@ function distribution(
       percentage: denominator ? count / denominator : 0,
     }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+/**
+ * Distribution in a fixed, meaningful order rather than by frequency. Bands
+ * such as experience ("Under 1 year" … "10+ years") and the 1-5 discovery
+ * scale only read correctly along their own axis.
+ */
+function orderedDistribution(
+  values: readonly string[],
+  order: readonly string[]
+): DistributionItem[] {
+  const items = distribution(values);
+  const rank = (label: string) => {
+    const index = order.indexOf(label);
+    return index === -1 ? order.length : index;
+  };
+  return [...items].sort(
+    (a, b) => rank(a.label) - rank(b.label) || a.label.localeCompare(b.label)
+  );
+}
+
+/** The newest questionnaire a version of this question appears in. */
+function latestQuestion(questionId: "q3" | "q4") {
+  for (const version of [...supportedQuestionnaireVersions].reverse()) {
+    const question = getQuestion(version, questionId);
+    if (question) return question;
+  }
+  return undefined;
+}
+
+function experienceOrder(): string[] {
+  const question = latestQuestion("q3");
+  return question?.responseType === "single_select"
+    ? question.options.map((option) => option.label)
+    : [];
+}
+
+/** Scale answers read as "4 of 5", so the axis is built the same way. */
+function closenessOrder(): string[] {
+  const question = latestQuestion("q4");
+  if (question?.responseType !== "likert_scale") return [];
+  const { minimum, maximum } = question.scale;
+  return Array.from(
+    { length: maximum - minimum + 1 },
+    (_, index) => `${minimum + index} of ${maximum}`
+  );
+}
+
+function buildTrajectory(
+  participants: readonly ParticipantViewModel[]
+): TrajectoryPoint[] {
+  const days = new Map<
+    string,
+    { participants: number; responses: number; completions: number }
+  >();
+  const day = (date: string) => {
+    const key = date.slice(0, 10);
+    const entry = days.get(key) ?? {
+      participants: 0,
+      responses: 0,
+      completions: 0,
+    };
+    days.set(key, entry);
+    return entry;
+  };
+
+  for (const participant of participants) {
+    day(participant.startedAt).participants += 1;
+    if (participant.completedAt) day(participant.completedAt).completions += 1;
+    for (const response of participant.responses) {
+      // Only stored rows carry a timestamp; missing and not-expected
+      // questions have nothing to place on the timeline.
+      if (response.createdAt) day(response.createdAt).responses += 1;
+    }
+  }
+
+  let cumulativeParticipants = 0;
+  let cumulativeResponses = 0;
+  let cumulativeCompletions = 0;
+  return [...days.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, counts]) => {
+      cumulativeParticipants += counts.participants;
+      cumulativeResponses += counts.responses;
+      cumulativeCompletions += counts.completions;
+      return {
+        date,
+        ...counts,
+        cumulativeParticipants,
+        cumulativeResponses,
+        cumulativeCompletions,
+      };
+    });
+}
+
+/**
+ * Per question, how many of the participants who were actually asked it have
+ * resolved it. A question hidden by routing (Q7 for engineering-only
+ * participants) is not in that participant's denominator, so it is never
+ * counted as missing. Questions are merged across questionnaire versions:
+ * the audience cares about "Q5", not about Q5-under-1.3.0.
+ */
+function buildQuestionCompletion(
+  participants: readonly ParticipantViewModel[]
+): QuestionCompletion[] {
+  const totals = new Map<
+    string,
+    {
+      resolved: number;
+      expected: number;
+      conditional: boolean;
+      wording: string;
+    }
+  >();
+
+  for (const participant of participants) {
+    if (participant.status === "withdrawn") continue;
+    for (const response of participant.responses) {
+      if (response.state === "NOT_EXPECTED" || response.state === "WITHDRAWN") {
+        continue;
+      }
+      const entry = totals.get(response.question.id) ?? {
+        resolved: 0,
+        expected: 0,
+        conditional: Boolean(response.question.visibility),
+        wording: response.question.wording,
+      };
+      entry.expected += 1;
+      if (
+        response.state === "ANSWERED" ||
+        response.state === "NOT_APPLICABLE"
+      ) {
+        entry.resolved += 1;
+      }
+      totals.set(response.question.id, entry);
+    }
+  }
+
+  const order = questionDisplayOrder();
+  return [...totals.entries()]
+    .map(([questionId, entry]) => ({
+      questionId,
+      label: questionId.toUpperCase(),
+      wording: entry.wording,
+      resolved: entry.resolved,
+      expected: entry.expected,
+      conditional: entry.conditional,
+    }))
+    .sort(
+      (a, b) =>
+        (order.indexOf(a.questionId) + 1 || order.length) -
+        (order.indexOf(b.questionId) + 1 || order.length)
+    );
 }
 
 function roleLabels(participant: ParticipantViewModel): string[] {
@@ -93,11 +280,6 @@ export function calculateDatasetMetrics(
   );
   const values = (selector: (participant: ParticipantViewModel) => string) =>
     eligible.map(selector);
-  const timelineCounts = new Map<string, number>();
-  for (const participant of participants) {
-    const date = participant.startedAt.slice(0, 10);
-    timelineCounts.set(date, (timelineCounts.get(date) ?? 0) + 1);
-  }
 
   return {
     totalParticipants: participants.length,
@@ -111,28 +293,11 @@ export function calculateDatasetMetrics(
     withdrawnSessions: participants.filter(
       (participant) => participant.status === "withdrawn"
     ).length,
-    mainSessions: participants.filter(
-      (participant) => participant.studyStage === "main"
-    ).length,
-    pilotSessions: participants.filter(
-      (participant) => participant.studyStage === "pilot"
-    ).length,
     storedResponses,
     expectedResponses,
-    datasetCoverage: expectedResponses
-      ? storedResponses / expectedResponses
-      : 0,
+    missingResponses: Math.max(expectedResponses - storedResponses, 0),
     statusDistribution: distribution(
       participants.map((participant) => participant.status)
-    ),
-    stageDistribution: distribution(
-      participants.map((participant) => participant.studyStage)
-    ),
-    modeDistribution: distribution(
-      participants.map((participant) => participant.responseMode)
-    ),
-    versionDistribution: distribution(
-      participants.map((participant) => participant.questionnaireVersion)
     ),
     roleDistribution: distribution(
       eligible.flatMap(roleLabels),
@@ -141,15 +306,24 @@ export function calculateDatasetMetrics(
     industryDistribution: distribution(
       values((participant) => participant.industry)
     ),
-    experienceDistribution: distribution(
-      values((participant) => participant.experience)
+    experienceDistribution: orderedDistribution(
+      values((participant) => participant.experience),
+      experienceOrder()
     ),
-    closenessDistribution: distribution(
-      values((participant) => participant.discoveryCloseness)
+    closenessDistribution: orderedDistribution(
+      values((participant) => participant.discoveryCloseness),
+      closenessOrder()
     ),
-    timeline: [...timelineCounts.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, count]) => ({ date, count })),
+    trajectory: buildTrajectory(participants),
+    questionCompletion: buildQuestionCompletion(participants),
+    participantCompletion: eligible
+      .map((participant) => ({
+        participantCode: participant.participantCode,
+        answered: participant.answeredCount,
+        expected: participant.expectedCount,
+        status: participant.status,
+      }))
+      .sort((a, b) => a.participantCode.localeCompare(b.participantCode)),
     latestActivity:
       participants
         .map((participant) => participant.lastActivityAt)
@@ -158,8 +332,12 @@ export function calculateDatasetMetrics(
   };
 }
 
+/**
+ * Works on a single-version question or on one merged across versions: it
+ * only needs the responses and the answered count.
+ */
 export function categoricalDistribution(
-  question: QuestionViewModel
+  question: Pick<QuestionViewModel, "responses" | "responseCount">
 ): DistributionItem[] {
   const values = question.responses.flatMap(({ response }) => {
     if (response.answer?.kind === "choice")
@@ -183,7 +361,14 @@ export function categoricalDistribution(
       return [String(response.answer.value)];
     return [];
   });
-  return distribution(values, question.responseCount);
+  const items = distribution(values, question.responseCount);
+  // A rating scale reads along its own axis: 1, 2, 3 … not most-popular first.
+  const isScale = question.responses.some(
+    ({ response }) => response.answer?.kind === "scale"
+  );
+  return isScale
+    ? [...items].sort((a, b) => Number(a.label) - Number(b.label))
+    : items;
 }
 
 export function runIntegrityChecks(

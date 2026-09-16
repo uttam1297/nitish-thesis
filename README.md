@@ -165,18 +165,24 @@ affected tab shows a banner with a "Reload this tab" action — no
 real-time merge, this is a thesis form, not a collaborative document
 editor.
 
-## Voice experience
+## Voice experience (retired in 1.5.0)
 
-Voice is implemented via the browser's native Web Speech API
+Questionnaire 1.5.0 turns voice input off: narrative answers are typed.
+`allowVoice` is a per-version question flag, so sessions still running under
+1.3.0 or 1.4.0 keep the microphone they started with, and the implementation
+below stays in the codebase — flipping the flag back re-enables it.
+
+Voice was implemented via the browser's native Web Speech API
 (`SpeechRecognition`/`webkitSpeechRecognition`), behind a
 `VoiceTranscriptionAdapter` interface (`src/features/voice/`). This
-application does **not** control where that recognition actually runs:
-depending on the browser and OS, it may process audio on-device or send it
+application never controlled where that recognition actually ran:
+depending on the browser and OS, it could process audio on-device or send it
 to the browser/OS vendor's own servers — the participant-facing copy
-discloses this rather than claiming otherwise. The application never
-receives or stores raw audio — only the transcript the participant sees,
-can edit, and explicitly keeps by continuing. Typing is always available
-regardless of voice support, and voice failure never blocks completion.
+disclosed this rather than claiming otherwise. The application never
+received or stored raw audio — only the transcript the participant saw,
+could edit, and explicitly kept by continuing. Because the form no longer
+offers voice, new asynchronous-form sessions record
+`consents.voice_input_consent = false`.
 
 ## Environment variables
 

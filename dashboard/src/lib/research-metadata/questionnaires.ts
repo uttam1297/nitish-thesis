@@ -1,4 +1,6 @@
 import { questionnaireV130 } from "./questionnaire-v1-3-0";
+import { questionnaireV140 } from "./questionnaire-v1-4-0";
+import { questionnaireV150 } from "./questionnaire-v1-5-0";
 import type {
   ChoicesAnswer,
   CurrentQuestionId,
@@ -10,6 +12,8 @@ import type {
 
 export const questionnaireRegistry = {
   "1.3.0": questionnaireV130,
+  "1.4.0": questionnaireV140,
+  "1.5.0": questionnaireV150,
 } as const satisfies Record<QuestionnaireVersion, QuestionnaireMetadata>;
 
 export const supportedQuestionnaireVersions = Object.freeze(

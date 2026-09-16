@@ -48,11 +48,6 @@ export default async function ParticipantDetailPage({
           <span>{formatPercent(participant.coverage)}</span>
         </article>
         <article className="card">
-          <span className="label">Study scope</span>
-          <strong>{humanize(participant.studyStage)}</strong>
-          <p>{humanize(participant.responseMode)}</p>
-        </article>
-        <article className="card">
           <span className="label">Questionnaire</span>
           <strong>{participant.questionnaireVersion}</strong>
           <p>
@@ -83,7 +78,7 @@ export default async function ParticipantDetailPage({
             <dt>Roles</dt>
             <dd>
               {participant.responses.find(
-                (response) => response.question.id === "q1",
+                (response) => response.question.id === "q1"
               )?.readableAnswer ?? "Not recorded"}
             </dd>
             <dt>Industry</dt>

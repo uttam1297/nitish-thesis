@@ -7,6 +7,7 @@ import { ModuleKind, ScriptTarget, transpileModule } from "typescript";
 import { describe, expect, it } from "vitest";
 
 import { questionnaireV130, researchConstructs } from "./questionnaire-v1-3-0";
+import { questionnaireV150 } from "./questionnaire-v1-5-0";
 import type { QuestionMetadata } from "./types";
 
 type AuthoritativeQuestion = {
@@ -71,23 +72,27 @@ function loadStaticTypeScriptExport<T>(
  */
 const authoritativeSourceFingerprints = {
   "src/config/interview/index.ts":
-    "a138462b4b88c773870344f29530f596021fbc2f5d02fc5a77ca23cf33152419",
+    "1ecda8fa87fdbb14f7e84e5ff1ca986d6fcb9923e025dcb6052a31c0be9e2c72",
   "src/config/interview/profile-questions.ts":
     "a6532d8c7792aa4fc5b8df3920eeeea4d16b1ad26fb8da9fef6afb180af26213",
   "src/config/interview/core-questions.ts":
-    "4b55742bd136f7b5e0d866085a267b337292ac6f2a0ea136150525af79cd7400",
+    "8b0d4a6fd7a7243c4196d74e74e376f10c14a81b2c26e220b77531a1b985fa64",
   "src/config/interview/taxonomy.ts":
     "30435d6e5a1e888e681f048986047c9cf9bca94c8450ed07255192473e27115f",
   "src/domain/interview/types.ts":
-    "0194391d22ba52f5742a85d5ad722cb68770f96e196353cde942d61bc75f9161",
+    "cc3efd7fd8eb236472596a47e6192317f32163752f1d76d43efc5c0d4ec0c3bf",
   "src/domain/interview/conditions.ts":
-    "164f493fda4f6ee9b5b865a1cc7b75130c31bad7f2cc385a1fb33e4e65ebee30",
+    "89c2bb9a01f303b7d120af0102e57c14a084f78b014570cf030d2bc5e0d63cd8",
   "src/features/interview/use-server-sync.ts":
-    "641eeeded11f53895aceb9bf607a37c3b23d20a01528a06dfcb9c4b9c7ec443c",
+    "db4f3f620b2e162fc33724553848b62e46104b511a71007118ddd1d75f6fe519",
   "supabase/migrations/20260910100000_init.sql":
     "b384429e7ce0a3585a0a187b3fb92c6f5ef9c762a600d9c8da68fd03f4444b6e",
   "supabase/migrations/20260911231500_questionnaire_v1_3_0.sql":
     "f199a4a210eaf5ec1e0eb4eb0cee1f5c2936d2ddcd93d9e12615c6c47f8265a3",
+  "supabase/migrations/20260916120000_questionnaire_v1_4_0.sql":
+    "549002ded704b43667e43595f5c6a4280728b869a10f7435adb1c0519304e8a4",
+  "supabase/migrations/20260916140000_questionnaire_v1_5_0.sql":
+    "4ed2a451cf0b5abe4476b5d2991345d23d221b09ce70d9de772ad17d495af1e9",
 } as const;
 
 describe("authoritative interview-source parity", () => {
@@ -213,6 +218,6 @@ describe("authoritative interview-source parity", () => {
     );
     const versionMatch = source.match(/QUESTIONNAIRE_VERSION\s*=\s*"([^"]+)"/);
 
-    expect(versionMatch?.[1]).toBe(questionnaireV130.version);
+    expect(versionMatch?.[1]).toBe(questionnaireV150.version);
   });
 });

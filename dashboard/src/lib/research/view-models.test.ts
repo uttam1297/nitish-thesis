@@ -6,8 +6,8 @@ import type { ResearchDataSnapshot } from "../supabase/rows";
 import { answerToReadable, validateResponseValue } from "./answers";
 import {
   buildParticipantViewModels,
-  expectedQuestionCount,
-  filterParticipantsByStage,
+  buildQuestionSummaries,
+  buildQuestionViewModels,
 } from "./view-models";
 
 const now = "2026-09-16T08:00:00.000Z";
@@ -120,8 +120,6 @@ describe("response transformations", () => {
 
 describe("participant view models", () => {
   it("uses the exact engineering-only Q7 denominator", () => {
-    expect(expectedQuestionCount(["engineering"])).toBe(15);
-    expect(expectedQuestionCount(["engineering", "product"])).toBe(16);
     const engineeringOnly = buildParticipantViewModels(
       snapshot(["engineering"])
     )[0];
@@ -150,12 +148,28 @@ describe("participant view models", () => {
     );
   });
 
-  it("defaults analytical filtering to main while preserving pilot", () => {
+  it("keeps pilot and main sessions in one dataset", () => {
     const main = buildParticipantViewModels(snapshot(["product"]))[0];
     const pilot = buildParticipantViewModels(
       snapshot(["product"], { id: "s2", study_stage: "pilot" })
     )[0];
-    expect(filterParticipantsByStage([main, pilot])).toEqual([main]);
-    expect(filterParticipantsByStage([main, pilot], "pilot")).toEqual([pilot]);
+    // The dashboard exposes no stage control, so both must survive as data.
+    expect(pilot.studyStage).toBe("pilot");
+    expect(
+      buildQuestionSummaries(buildQuestionViewModels([main, pilot])).find(
+        (question) => question.questionId === "q1"
+      )?.expectedParticipantCount
+    ).toBe(2);
+  });
+
+  it("merges a question across questionnaire versions into one row", () => {
+    const older = buildParticipantViewModels(snapshot(["product"]))[0];
+    const summaries = buildQuestionSummaries(buildQuestionViewModels([older]));
+    const q1 = summaries.filter((question) => question.questionId === "q1");
+
+    expect(q1).toHaveLength(1);
+    expect(q1[0].questionnaireVersions.length).toBeGreaterThan(1);
+    // Only the 1.3.0 session contributes a real participant.
+    expect(q1[0].expectedParticipantCount).toBe(1);
   });
 });

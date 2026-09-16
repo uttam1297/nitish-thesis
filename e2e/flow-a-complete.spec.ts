@@ -1,10 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * Speech recognition is unavailable in headless CI (no microphone), so every
- * flow here disables it before the app boots and drives the interview by
- * typing. This keeps the flow deterministic; voice itself is covered by
- * flow-c-voice-fallback.spec.ts.
+ * Questionnaire 1.5.0 retired voice input, so the interview is driven by
+ * typing throughout. Speech recognition is stubbed out before the app boots
+ * to keep the flow deterministic in headless CI; that the microphone stays
+ * gone even where the API exists is covered by
+ * flow-c-voice-disabled.spec.ts.
  */
 async function disableSpeechRecognition(page: Page) {
   await page.addInitScript(() => {
@@ -83,10 +84,10 @@ test("Flow A: welcome -> consent -> profile -> complete -> review -> submit", as
   await answerOpenQuestions(page, 1);
 
   await continueSection(page);
-  await answerOpenQuestions(page, 5);
+  await answerOpenQuestions(page, 4);
 
   await continueSection(page);
-  await answerOpenQuestions(page, 3);
+  await answerOpenQuestions(page, 2);
 
   await expect(
     page.getByRole("heading", { name: "Review your answers" })
