@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { getDashboardConfig } from "@/lib/config/dashboard-config";
 import { getDashboardData } from "@/lib/research/dashboard-data";
+import { displayAnswer } from "@/lib/research/privacy";
 import {
   formatPercent,
   formatTimestamp,
@@ -109,35 +110,25 @@ export default async function ParticipantDetailPage({
         <h2>Questionnaire record</h2>
         {participant.responses.map((response) => {
           const narrative = response.question.responseType === "voice_or_text";
-          const readable =
-            narrative && !config.showNarratives
-              ? "Narrative display disabled"
-              : response.readableAnswer;
+          const readable = displayAnswer(response, config);
+          // "Not applicable" is an answer the participant chose, so it reads as
+          // resolved rather than as something wrong with the record.
+          const resolved =
+            response.state === "ANSWERED" ||
+            response.state === "NOT_APPLICABLE";
           return (
             <article
-              className={`panel answer-state ${response.state === "ANSWERED" ? "answered" : ""}`}
+              className={`panel answer-state ${resolved ? "answered" : ""}`}
               key={response.question.id}
             >
               <p className="eyebrow">
                 {response.question.id} · {humanize(response.question.construct)}
               </p>
               <h3>{response.question.wording}</h3>
-              <span
-                className={`badge ${response.state !== "ANSWERED" ? "warning" : ""}`}
-              >
+              <span className={`badge ${resolved ? "" : "warning"}`}>
                 {humanize(response.state)}
               </span>
-              <p>
-                {response.state === "ANSWERED"
-                  ? readable
-                  : response.state === "MISSING"
-                    ? "Missing — no stored response"
-                    : response.state === "NOT_EXPECTED"
-                      ? "Not expected — questionnaire condition"
-                      : response.state === "WITHDRAWN"
-                        ? "Withdrawn — response content unavailable"
-                        : "Unexpected stored response"}
-              </p>
+              <p>{readable}</p>
               {config.showRawJson &&
                 response.answer &&
                 (!narrative || config.showNarratives) && (

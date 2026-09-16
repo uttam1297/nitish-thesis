@@ -84,7 +84,7 @@ const authoritativeSourceFingerprints = {
   "src/domain/interview/conditions.ts":
     "89c2bb9a01f303b7d120af0102e57c14a084f78b014570cf030d2bc5e0d63cd8",
   "src/features/interview/use-server-sync.ts":
-    "f7a90abd0bbaba1847d41088cbe94432f464d022ad81f99b32ef86cc8e00f69b",
+    "1561ac4f3ea789e14ea8ad0f15f156a6814bfdc02f0deaf422160a2342af9d0b",
   "supabase/migrations/20260910100000_init.sql":
     "b384429e7ce0a3585a0a187b3fb92c6f5ef9c762a600d9c8da68fd03f4444b6e",
   "supabase/migrations/20260911231500_questionnaire_v1_3_0.sql":
@@ -92,7 +92,7 @@ const authoritativeSourceFingerprints = {
   "supabase/migrations/20260916120000_questionnaire_v1_4_0.sql":
     "549002ded704b43667e43595f5c6a4280728b869a10f7435adb1c0519304e8a4",
   "supabase/migrations/20260916140000_questionnaire_v1_5_0.sql":
-    "4ed2a451cf0b5abe4476b5d2991345d23d221b09ce70d9de772ad17d495af1e9",
+    "9cd7d949db198e7111ce5c9ac46b8080cf0472d74e7d10634fd6a8876196502a",
 } as const;
 
 describe("authoritative interview-source parity", () => {
