@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("./server-client", () => ({ getDashboardSupabaseClient: vi.fn() }));
 
 import { DashboardDataError, listSessions } from "./repository";
+import { listResponses } from "./repository";
 
 function clientWith(result: unknown) {
   const order = vi.fn().mockResolvedValue(result);
@@ -39,6 +40,14 @@ describe("read-only research repository", () => {
     );
     await expect(listSessions(failed.client as never)).rejects.toBeInstanceOf(
       DashboardDataError,
+    );
+  });
+
+  it("does not fetch unused optional narrative elaboration", async () => {
+    const { client, select } = clientWith({ data: [], error: null });
+    await listResponses(client as never);
+    expect(select).toHaveBeenCalledWith(
+      expect.not.stringContaining("optional_elaboration"),
     );
   });
 });

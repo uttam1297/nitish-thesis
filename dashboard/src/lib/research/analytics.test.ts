@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { ParticipantViewModel } from "./view-models";
 import { calculateDatasetMetrics } from "./analytics";
+import { buildQuestionViewModels } from "./view-models";
 
 function participant(overrides: Partial<ParticipantViewModel> = {}): ParticipantViewModel {
   return {
@@ -41,5 +42,12 @@ describe("deterministic dataset analytics", () => {
     const metrics = calculateDatasetMetrics([participant({ roles: ["product", "engineering"] })]);
     expect(metrics.roleDistribution.map((item) => item.count)).toEqual([1, 1]);
     expect(metrics.roleDistribution.reduce((sum, item) => sum + item.percentage, 0)).toBe(2);
+  });
+
+  it("uses the expected-participant denominator for conditional question coverage", () => {
+    const q7 = { ...participant(), participantCode: "P003", roles: ["product"], responses: [{ question: { id: "q7" }, state: "ANSWERED" }] } as unknown as ParticipantViewModel;
+    const engineeringOnly = { ...participant(), participantCode: "P004", roles: ["engineering"], hiddenQuestionIds: ["q7"], responses: [{ question: { id: "q7" }, state: "NOT_EXPECTED" }] } as unknown as ParticipantViewModel;
+    const question = buildQuestionViewModels([q7, engineeringOnly]).find((item) => item.questionId === "q7");
+    expect(question).toMatchObject({ expectedParticipantCount: 1, responseCount: 1, missingCount: 0, coverage: 1 });
   });
 });
