@@ -66,16 +66,14 @@ describe("questionnaire configuration", () => {
     }
   });
 
-  it("offers no voice input in 1.5 and keeps it in earlier versions", () => {
+  it("keeps voice input available alongside typing in every version", () => {
     const narrative = (item: typeof questionnaire) =>
       item.questions.filter(
         (question) => question.responseType === "voice_or_text"
       );
 
     expect(
-      narrative(questionnaire).every(
-        (question) => question.allowVoice === false
-      )
+      narrative(questionnaire).every((question) => question.allowVoice)
     ).toBe(true);
     expect(
       narrative(questionnaireV140).every((question) => question.allowVoice)

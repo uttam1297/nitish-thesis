@@ -132,9 +132,14 @@ export function useServerSync(interview: InterviewContextValue) {
           consent: {
             consentVersion: state.consent.consentVersion,
             participationConsent: true,
-            // 1.5.0 removed voice input, so there is no voice capture to
-            // consent to on the asynchronous form.
-            voiceInputConsent: false,
+            // Voice capture is optional beside typing and is transcribed on
+            // the participant's own device. The participation agreement covers
+            // this enabled input method; no audio ever reaches this
+            // application, so recording consent stays false.
+            voiceInputConsent: questionnaire.questions.some(
+              (question) =>
+                question.responseType === "voice_or_text" && question.allowVoice
+            ),
             recordingConsent: false,
           },
         });

@@ -13,9 +13,12 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prebuild": "node scripts/fetch-speech-assets.mjs",
+    "speech:assets": "node scripts/fetch-speech-assets.mjs"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.3.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "class-variance-authority": "^0.7.1",

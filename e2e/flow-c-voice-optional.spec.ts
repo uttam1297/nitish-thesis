@@ -1,25 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * The browser under test normally has no speech recognition at all, which
- * would hide the microphone for the wrong reason. Installing a working stub
- * proves the control is gone because questionnaire 1.5.0 retired voice input,
- * not because the API was missing.
+ * Voice input is an enhancement: the interview must be completable by typing
+ * whether or not the browser can run local speech recognition. This flow
+ * removes the Audio Worklet constructor — the same thing a browser without
+ * support looks like — and finishes the interview by typing throughout.
  */
-async function installSpeechRecognition(page: Page) {
+async function disableVoiceInput(page: Page) {
   await page.addInitScript(() => {
-    class StubSpeechRecognition {
-      lang = "";
-      interimResults = false;
-      continuous = false;
-      onresult: unknown = null;
-      onerror: unknown = null;
-      onend: unknown = null;
-      start() {}
-      stop() {}
-    }
-    Object.defineProperty(window, "SpeechRecognition", {
-      value: StubSpeechRecognition,
+    Object.defineProperty(window, "AudioWorkletNode", {
+      value: undefined,
       configurable: true,
     });
   });
@@ -53,13 +43,13 @@ async function answerOpenQuestions(page: Page, count: number) {
   }
 }
 
-test("Flow C: voice input is retired and typing completes the interview", async ({
+test("Flow C: the interview completes by typing when voice is unavailable", async ({
   page,
 }) => {
-  await installSpeechRecognition(page);
+  await disableVoiceInput(page);
   await page.goto("/");
 
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();
@@ -74,16 +64,15 @@ test("Flow C: voice input is retired and typing completes the interview", async 
 
   await continueSection(page);
 
-  // Speech recognition is available in this browser, yet no microphone
-  // control renders: 1.5.0 turned voice off, so the textarea is the only
-  // way to answer.
-  await expect(page.getByRole("button", { name: "Speak answer" })).toHaveCount(
-    0
-  );
+  // No microphone control, no error, no blocked question: the textarea is
+  // simply the only way to answer.
+  await expect(
+    page.getByRole("button", { name: "Start voice input" })
+  ).toHaveCount(0);
   const answer = page.getByRole("textbox", { name: "Your answer" });
   await expect(answer).toBeVisible();
   await answer.fill(
-    "Typed answer because the interview no longer offers voice."
+    "Typed answer because this browser cannot run voice input."
   );
   await page.getByRole("button", { name: "Continue" }).click();
   await answerOpenQuestions(page, 2);

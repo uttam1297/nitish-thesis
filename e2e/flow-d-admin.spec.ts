@@ -13,13 +13,12 @@ import { expect, test, type Page } from "@playwright/test";
 const EMAIL = process.env.E2E_SUPABASE_TEST_EMAIL;
 const PASSWORD = process.env.E2E_SUPABASE_TEST_PASSWORD;
 
-async function disableSpeechRecognition(page: Page) {
+async function disableVoiceInput(page: Page) {
   await page.addInitScript(() => {
-    Object.defineProperty(window, "SpeechRecognition", {
-      value: undefined,
-      configurable: true,
-    });
-    Object.defineProperty(window, "webkitSpeechRecognition", {
+    // Removing the Audio Worklet constructor is how a browser without local
+    // speech support looks to the app: the microphone control never renders
+    // and the speech model is never downloaded, keeping CI runs fast.
+    Object.defineProperty(window, "AudioWorkletNode", {
       value: undefined,
       configurable: true,
     });
@@ -44,9 +43,9 @@ test.skip(
 test("Flow D: researcher logs in, views a session and its responses", async ({
   page,
 }) => {
-  await disableSpeechRecognition(page);
+  await disableVoiceInput(page);
   await page.goto("/");
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();

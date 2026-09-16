@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("Flow B: start -> answer -> refresh -> resume", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();
@@ -46,7 +46,7 @@ test("Flow B: start -> answer -> refresh -> resume", async ({ page }) => {
 
 test("Flow B: start over discards the saved draft", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();
@@ -63,7 +63,7 @@ test("Flow B: start over discards the saved draft", async ({ page }) => {
   await page.getByRole("button", { name: "Start over" }).click();
 
   await expect(
-    page.getByRole("button", { name: /begin the interview/i })
+    page.getByRole("button", { name: /get started/i })
   ).toBeVisible();
   expect(
     await page.evaluate(() =>

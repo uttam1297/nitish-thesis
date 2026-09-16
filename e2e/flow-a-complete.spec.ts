@@ -1,19 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * Questionnaire 1.5.0 retired voice input, so the interview is driven by
- * typing throughout. Speech recognition is stubbed out before the app boots
- * to keep the flow deterministic in headless CI; that the microphone stays
- * gone even where the API exists is covered by
- * flow-c-voice-disabled.spec.ts.
+ * This flow covers typing end to end, so voice capture is switched off before
+ * the app boots: it keeps the run deterministic and stops CI from downloading
+ * the speech model. That voice is offered — and optional — where the browser
+ * supports it is covered by flow-c-voice-optional.spec.ts.
  */
-async function disableSpeechRecognition(page: Page) {
+async function disableVoiceInput(page: Page) {
   await page.addInitScript(() => {
-    Object.defineProperty(window, "SpeechRecognition", {
-      value: undefined,
-      configurable: true,
-    });
-    Object.defineProperty(window, "webkitSpeechRecognition", {
+    // Removing the Audio Worklet constructor is how a browser without local
+    // speech support looks to the app: the microphone control never renders
+    // and the speech model is never downloaded, keeping CI runs fast.
+    Object.defineProperty(window, "AudioWorkletNode", {
       value: undefined,
       configurable: true,
     });
@@ -51,13 +49,13 @@ async function answerOpenQuestions(page: Page, count: number) {
 test("Flow A: welcome -> consent -> profile -> complete -> review -> submit", async ({
   page,
 }) => {
-  await disableSpeechRecognition(page);
+  await disableVoiceInput(page);
   await page.goto("/");
 
   await expect(
     page.getByRole("heading", { name: /adapting b2c customer acquisition/i })
   ).toBeVisible();
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
 
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })

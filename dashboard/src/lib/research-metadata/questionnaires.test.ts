@@ -203,10 +203,10 @@ describe("version-aware registry", () => {
     expect(getQuestionIds("1.3.0")).toContain("q16");
   });
 
-  it("offers no voice input on 1.5.0 narrative questions", () => {
+  it("keeps voice input available on 1.5.0 narrative questions", () => {
     for (const question of questionnaireV150.questions.slice(4)) {
       if (question.responseType !== "voice_or_text") continue;
-      expect(question.input).toEqual({ voice: false, text: true });
+      expect(question.input).toEqual({ voice: true, text: true });
     }
   });
 

@@ -1,12 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function disableSpeechRecognition(page: Page) {
+async function disableVoiceInput(page: Page) {
   await page.addInitScript(() => {
-    Object.defineProperty(window, "SpeechRecognition", {
-      value: undefined,
-      configurable: true,
-    });
-    Object.defineProperty(window, "webkitSpeechRecognition", {
+    // Removing the Audio Worklet constructor is how a browser without local
+    // speech support looks to the app: the microphone control never renders
+    // and the speech model is never downloaded, keeping CI runs fast.
+    Object.defineProperty(window, "AudioWorkletNode", {
       value: undefined,
       configurable: true,
     });
@@ -16,7 +15,7 @@ async function disableSpeechRecognition(page: Page) {
 test("Flow C: a temporary persistence failure retains local answers and retries successfully", async ({
   page,
 }) => {
-  await disableSpeechRecognition(page);
+  await disableVoiceInput(page);
 
   // Simulate the database being temporarily unavailable for the first
   // session-creation attempt only — every later request (including the
@@ -39,7 +38,7 @@ test("Flow C: a temporary persistence failure retains local answers and retries 
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();
@@ -92,7 +91,7 @@ test("Flow C: a temporary persistence failure retains local answers and retries 
 test("Flow C2: a deleted server session is recreated from the local draft", async ({
   page,
 }) => {
-  await disableSpeechRecognition(page);
+  await disableVoiceInput(page);
   const staleSessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
   await page.addInitScript((sessionId) => {
     window.localStorage.setItem(
@@ -107,7 +106,7 @@ test("Flow C2: a deleted server session is recreated from the local draft", asyn
   }, staleSessionId);
 
   await page.goto("/");
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();

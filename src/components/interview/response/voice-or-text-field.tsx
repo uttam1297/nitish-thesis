@@ -1,19 +1,20 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { StatusMessage } from "@/components/feedback/status-message";
 import { VoiceButton } from "@/components/interview/voice-button";
 import type { ResponseFieldProps } from "@/components/interview/response/types";
 import { Label } from "@/components/ui/label";
 import { TextArea } from "@/components/ui/textarea";
+import { appendTranscript } from "@/features/voice/transcript";
 import { useVoiceInput } from "@/features/voice/use-voice-input";
 
 /**
  * Voice is an optional input method layered over a plain textarea, which
- * remains the source of truth: the participant always sees and can edit
- * the transcript before continuing, and the question is fully answerable
- * by typing whether or not voice is available.
+ * remains the source of truth: transcribed segments are appended to whatever
+ * the participant has typed or corrected, and the question is fully
+ * answerable by typing whether or not voice is available.
  */
 export function VoiceOrTextField({
   question,
@@ -27,20 +28,27 @@ export function VoiceOrTextField({
   const notApplicableId = useId();
   const isNotApplicable = value.kind === "not_applicable";
   const text = value.kind === "text" ? value.text : "";
+
+  // Transcription resolves asynchronously, so the merge has to read the text
+  // as it is at that moment — not as it was when recording started.
+  const textRef = useRef(text);
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
+  const usedVoice = useRef(false);
+
   const voice = useVoiceInput({
-    onCapture: (text) => {
+    onTranscript: (segment) => {
+      usedVoice.current = true;
       onChange(
-        {
-          kind: "text",
-          text,
-        },
+        { kind: "text", text: appendTranscript(textRef.current, segment) },
         "voice"
       );
     },
   });
 
   const showVoice =
-    question.allowVoice && !isNotApplicable && voice.state !== "unsupported";
+    question.allowVoice && !isNotApplicable && voice.status !== "unavailable";
 
   return (
     <div role="group" aria-labelledby={labelledBy} className="grid gap-3">
@@ -48,17 +56,24 @@ export function VoiceOrTextField({
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <VoiceButton
-              state={voice.state}
+              status={voice.status}
+              level={voice.level}
               elapsedSeconds={voice.elapsedSeconds}
-              onStart={voice.start}
+              isPreparing={voice.isPreparing}
+              onStart={() => void voice.start()}
               onStop={voice.stop}
             />
             <span className="text-xs text-muted-foreground">or type below</span>
           </div>
           <p className="text-xs text-muted-foreground/80">
-            Uses your browser&rsquo;s speech recognition. Nothing is saved until
-            you review the text.
+            Your voice is transcribed on your own device. No audio is sent or
+            stored, and nothing is saved until you review the text.
           </p>
+          {voice.errorMessage && (
+            <StatusMessage variant="warning">
+              {voice.errorMessage}
+            </StatusMessage>
+          )}
         </div>
       )}
 
@@ -75,10 +90,15 @@ export function VoiceOrTextField({
           onChange={(event) =>
             onChange(
               { kind: "text", text: event.target.value },
-              text && voice.state === "completed" ? "voice_edited" : "typed"
+              usedVoice.current ? "voice_edited" : "typed"
             )
           }
         />
+        {voice.isTranscribing && (
+          <span className="text-xs text-muted-foreground">
+            Processing voice… you can keep typing.
+          </span>
+        )}
       </div>
 
       {question.allowNotApplicable && (
@@ -115,15 +135,6 @@ export function VoiceOrTextField({
             </span>
           </label>
         </div>
-      )}
-
-      {!isNotApplicable && voice.state === "completed" && (
-        <StatusMessage variant="success">
-          Transcript added. You can edit the text before continuing.
-        </StatusMessage>
-      )}
-      {!isNotApplicable && voice.state === "error" && voice.errorMessage && (
-        <StatusMessage variant="warning">{voice.errorMessage}</StatusMessage>
       )}
     </div>
   );

@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
     await setResumeCookie(resumeToken);
 
     console.info("[interview] session created", {
-      sessionId: session.id,
       responseMode: body.responseMode,
     });
 

@@ -169,24 +169,53 @@ affected tab shows a banner with a "Reload this tab" action — no
 real-time merge, this is a thesis form, not a collaborative document
 editor.
 
-## Voice experience (retired in 1.5.0)
+## Voice experience
 
-Questionnaire 1.5.0 turns voice input off: narrative answers are typed.
-`allowVoice` is a per-version question flag, so sessions still running under
-1.3.0 or 1.4.0 keep the microphone they started with, and the implementation
-below stays in the codebase — flipping the flag back re-enables it.
+Questionnaire 1.5.0 offers voice input alongside typing for narrative answers.
+`allowVoice` is a per-version question flag, so a session always uses the
+controls defined by its pinned questionnaire version.
 
-Voice was implemented via the browser's native Web Speech API
-(`SpeechRecognition`/`webkitSpeechRecognition`), behind a
-`VoiceTranscriptionAdapter` interface (`src/features/voice/`). This
-application never controlled where that recognition actually ran:
-depending on the browser and OS, it could process audio on-device or send it
-to the browser/OS vendor's own servers — the participant-facing copy
-disclosed this rather than claiming otherwise. The application never
-received or stored raw audio — only the transcript the participant saw,
-could edit, and explicitly kept by continuing. Because the form no longer
-offers voice, new asynchronous-form sessions record
-`consents.voice_input_consent = false`.
+Transcription runs **entirely in the participant's browser**. The application
+serves a quantized Whisper Tiny (English) model from its own origin and runs it
+with Transformers.js inside a Web Worker, on WebGPU where an adapter exists and
+on WebAssembly everywhere else. No audio is uploaded, stored or logged: the
+microphone stream is converted to PCM in memory, transcribed locally, and the
+buffers are handed to the worker and released. Only the text the participant
+sees — and can edit or delete — takes part in the normal submission flow. When
+a questionnaire offers voice input, new asynchronous-form sessions record
+`consents.voice_input_consent = true`; this is distinct from recording consent,
+which remains false because the application never stores audio.
+
+```text
+microphone → Web Audio (PCM) → 12-28 s segments → Web Worker → Whisper → text
+                                                                        ↓
+                                                              existing textarea
+```
+
+If anything in that chain is unavailable — no Audio Worklet, no microphone
+permission, an insecure context, or a model that will not load after a WebGPU
+attempt, a WASM attempt and one retry — the microphone control disappears (or
+reports a plain-language message) and typing continues to work.
+
+### Speech assets
+
+`npm run speech:assets` downloads the model into
+`public/models/whisper-tiny-en-v1/` and copies the ONNX Runtime WASM binaries
+into `public/wasm/`. Both directories are generated and git-ignored; `npm run
+build` runs the script automatically via `prebuild`. Run it once by hand before
+`npm run dev` if you want voice input locally.
+
+| Asset                                  | Size    | Fetched by              |
+| -------------------------------------- | ------- | ----------------------- |
+| Whisper Tiny EN, q8 encoder + decoder  | 41 MB   | every participant, once |
+| Tokenizer and configs                  | 2.2 MB  | every participant, once |
+| `ort-wasm-simd-threaded.wasm`          | 14.3 MB | devices without WebGPU  |
+| `ort-wasm-simd-threaded.asyncify.wasm` | 26.9 MB | devices with WebGPU     |
+
+Assets are versioned by directory name and served with
+`Cache-Control: immutable` (see `next.config.ts`), so a repeat participant — or
+one who goes offline after the first load — pays nothing. Changing the model
+means changing `SPEECH_MODEL_ID` and the directory name together.
 
 ## Environment variables
 
@@ -228,6 +257,7 @@ Copy `.env.example` to `.env.local` and fill in real values.
 ```bash
 npm install
 cp .env.example .env.local   # fill in real values, or leave SUPABASE_SERVICE_ROLE_KEY unset
+npm run speech:assets        # optional: only needed to use voice input locally
 npm run dev
 ```
 
@@ -266,6 +296,11 @@ unset.
    project settings (Production and Preview as appropriate).
 2. Redeploy after adding/changing env vars — Vercel does not apply
    changes to an already-running deployment.
+3. No extra configuration is needed for voice input: `prebuild` fetches the
+   speech assets during the Vercel build and they deploy as ordinary static
+   files (~85 MB of build output, well inside Vercel's limits). The build
+   needs outbound access to `huggingface.co`, which the standard build
+   container has.
 
 ## Data dictionary
 

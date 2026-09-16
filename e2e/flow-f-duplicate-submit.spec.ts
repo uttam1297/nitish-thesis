@@ -1,12 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function disableSpeechRecognition(page: Page) {
+async function disableVoiceInput(page: Page) {
   await page.addInitScript(() => {
-    Object.defineProperty(window, "SpeechRecognition", {
-      value: undefined,
-      configurable: true,
-    });
-    Object.defineProperty(window, "webkitSpeechRecognition", {
+    // Removing the Audio Worklet constructor is how a browser without local
+    // speech support looks to the app: the microphone control never renders
+    // and the speech model is never downloaded, keeping CI runs fast.
+    Object.defineProperty(window, "AudioWorkletNode", {
       value: undefined,
       configurable: true,
     });
@@ -44,9 +43,9 @@ async function answerOpenQuestions(page: Page, count: number) {
 test("Flow F: a duplicate final-submit request completes only one session", async ({
   page,
 }) => {
-  await disableSpeechRecognition(page);
+  await disableVoiceInput(page);
   await page.goto("/");
-  await page.getByRole("button", { name: /begin the interview/i }).click();
+  await page.getByRole("button", { name: /get started/i }).click();
   await page
     .getByRole("checkbox", { name: /read and agree to all five statements/i })
     .check();
@@ -72,6 +71,15 @@ test("Flow F: a duplicate final-submit request completes only one session", asyn
     page.getByRole("heading", { name: "Review your answers" })
   ).toBeVisible();
 
+  // Captured before submitting: a successful submit deliberately clears the
+  // stored identity so a finished interview cannot be resubmitted from this
+  // browser (see clearSessionIdentity in use-server-sync.ts).
+  const identity = await page.evaluate(() =>
+    window.localStorage.getItem("nitish-thesis-interview:session-identity:v1")
+  );
+  expect(identity).not.toBeNull();
+  const { sessionId, resumeToken } = JSON.parse(identity!);
+
   const submitted = page.waitForResponse(
     (response) =>
       response.url().includes("/api/interview/submit") && response.ok()
@@ -84,11 +92,6 @@ test("Flow F: a duplicate final-submit request completes only one session", asyn
 
   // Replay the exact same submit request the browser just made — this is
   // what a flaky-network retry looks like from the server's point of view.
-  const identity = await page.evaluate(() =>
-    window.localStorage.getItem("nitish-thesis-interview:session-identity:v1")
-  );
-  expect(identity).not.toBeNull();
-  const { sessionId, resumeToken } = JSON.parse(identity!);
 
   const results = await page.evaluate(
     async ({ sessionId, resumeToken }) => {

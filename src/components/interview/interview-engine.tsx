@@ -18,6 +18,8 @@ import {
   useInterview,
 } from "@/features/interview/interview-provider";
 import { useServerSync } from "@/features/interview/use-server-sync";
+import { getSpeechEngine } from "@/features/voice/speech-engine";
+import { useVoicePreload } from "@/features/voice/use-voice-preload";
 import type { Step } from "@/domain/interview/types";
 import { getQuestionnaire, QUESTIONNAIRE_VERSION } from "@/config/interview";
 import { draftStorage } from "@/lib/persistence/draft-storage";
@@ -61,6 +63,22 @@ export function InterviewFlow() {
     resumeLink,
     participantCode,
   } = useServerSync(interview);
+
+  // Load the speech model quietly once the participant is past the welcome
+  // screen, so the first microphone click does not wait for the download.
+  useVoicePreload(
+    currentStep.kind !== "welcome" &&
+      interview.questionnaire.questions.some(
+        (question) =>
+          question.responseType === "voice_or_text" && question.allowVoice
+      )
+  );
+
+  // The loaded model holds ~50 MB in the worker; a finished interview has no
+  // use for it, and phones benefit most from getting it back.
+  useEffect(() => {
+    if (currentStep.kind === "complete") getSpeechEngine().dispose();
+  }, [currentStep.kind]);
 
   const showProgress =
     currentStep.kind === "question" || currentStep.kind === "section";
