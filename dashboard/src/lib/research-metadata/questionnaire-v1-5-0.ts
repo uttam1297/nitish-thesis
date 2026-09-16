@@ -11,8 +11,8 @@ import type { CurrentQuestionId, QuestionnaireMetadata } from "./types";
 const removedQuestionIds: readonly CurrentQuestionId[] = ["q11", "q16"];
 
 /**
- * 1.5.0 keeps every surviving 1.4.0 question verbatim, retires Q11 and Q16,
- * and switches voice input off — narrative answers are typed.
+ * 1.5.0 keeps every surviving 1.4.0 question verbatim and retires Q11 and
+ * Q16. Narrative questions keep browser speech input alongside typing.
  */
 export const questionnaireV150 = {
   ...questionnaireV130,
@@ -28,7 +28,7 @@ export const questionnaireV150 = {
       ...(question.responseType === "voice_or_text"
         ? {
             allowNotApplicable: true as const,
-            input: { voice: false as const, text: true as const },
+            input: { voice: true as const, text: true as const },
           }
         : {}),
     })),

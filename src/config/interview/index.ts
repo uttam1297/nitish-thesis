@@ -37,13 +37,12 @@ export const questionnaireV140 = buildQuestionnaire("1.4.0", {
   allowNotApplicable: true,
 });
 /**
- * 1.5.0 drops Q11 and Q16 and retires voice input: answers are typed. Older
- * versions keep their own question set and controls so a session in flight
- * finishes the interview it started.
+ * 1.5.0 drops Q11 and Q16. Voice input remains available alongside typing for
+ * every narrative question; a session pinned to an older version still keeps
+ * its own question set and controls.
  */
 export const questionnaireV150 = buildQuestionnaire("1.5.0", {
   allowNotApplicable: true,
-  allowVoice: false,
   removedIds: REMOVED_IN_V150,
 });
 export const questionnaire = questionnaireV150;

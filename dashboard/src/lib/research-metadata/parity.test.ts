@@ -72,7 +72,7 @@ function loadStaticTypeScriptExport<T>(
  */
 const authoritativeSourceFingerprints = {
   "src/config/interview/index.ts":
-    "1ecda8fa87fdbb14f7e84e5ff1ca986d6fcb9923e025dcb6052a31c0be9e2c72",
+    "f3e66f2beaa874e375eaf50ecbe7e774a362eaa5f5b49f92389a5d174de20b6d",
   "src/config/interview/profile-questions.ts":
     "a6532d8c7792aa4fc5b8df3920eeeea4d16b1ad26fb8da9fef6afb180af26213",
   "src/config/interview/core-questions.ts":
@@ -84,7 +84,7 @@ const authoritativeSourceFingerprints = {
   "src/domain/interview/conditions.ts":
     "89c2bb9a01f303b7d120af0102e57c14a084f78b014570cf030d2bc5e0d63cd8",
   "src/features/interview/use-server-sync.ts":
-    "d4df9764ee98784edc1dcecc9c50e130888c824df5a24827cce11a92e76a429d",
+    "f7a90abd0bbaba1847d41088cbe94432f464d022ad81f99b32ef86cc8e00f69b",
   "supabase/migrations/20260910100000_init.sql":
     "b384429e7ce0a3585a0a187b3fb92c6f5ef9c762a600d9c8da68fd03f4444b6e",
   "supabase/migrations/20260911231500_questionnaire_v1_3_0.sql":
