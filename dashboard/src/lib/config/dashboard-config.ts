@@ -113,10 +113,13 @@ export function getDashboardConfig(
     revalidateSeconds: parseRevalidateSeconds(
       environment.DASHBOARD_REVALIDATE_SECONDS
     ),
+    // Qualitative answers are the point of the dashboard, so they show by
+    // default. A deployment that needs them hidden sets the variable to
+    // "false" explicitly.
     showNarratives: parseBoolean(
       environment.DASHBOARD_SHOW_NARRATIVES,
       "DASHBOARD_SHOW_NARRATIVES",
-      false
+      true
     ),
     showRawJson: parseBoolean(
       environment.DASHBOARD_SHOW_RAW_JSON,
