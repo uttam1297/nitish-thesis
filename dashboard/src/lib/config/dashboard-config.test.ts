@@ -8,10 +8,10 @@ import {
 } from "./dashboard-config";
 
 describe("getDashboardConfig", () => {
-  it("uses safe defaults when variables are absent", () => {
+  it("defaults to showing narratives and hiding raw JSON", () => {
     expect(getDashboardConfig({})).toEqual({
       revalidateSeconds: 1800,
-      showNarratives: false,
+      showNarratives: true,
       showRawJson: false,
       timezone: "Europe/Berlin",
     });
