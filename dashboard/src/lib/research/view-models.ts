@@ -1,4 +1,5 @@
 import {
+  currentQuestionnaireVersion,
   getExpectedQuestionIds,
   getQuestion,
   getQuestionnaire,
@@ -40,6 +41,18 @@ export type ResponseViewModel = Readonly<{
 }>;
 
 export type ParticipantViewModel = Readonly<{
+  /**
+   * Every participant against the same question set, whatever version they
+   * answered: the shared questions are worded identically across 1.3.0-1.5.0,
+   * so one canonical list reads as a single dataset rather than as three.
+   */
+  canonicalResponses: readonly ResponseViewModel[];
+  /**
+   * Answers to questions the current questionnaire has retired (Q11, Q16).
+   * Kept, and kept separate, so nothing collected is lost or silently folded
+   * into a question it was not asked under.
+   */
+  supplementaryResponses: readonly ResponseViewModel[];
   participantCode: string;
   roles: readonly string[];
   industry: string;
@@ -108,6 +121,12 @@ export function buildParticipantViewModels(
   }
   const consentsBySession = new Map(
     snapshot.consents.map((row) => [row.session_id, row])
+  );
+
+  // The questionnaire in use today defines the canonical set every participant
+  // is reported against, whichever version they actually answered.
+  const canonicalQuestionIds = new Set<string>(
+    getQuestionnaire(currentQuestionnaireVersion()).questionIds
   );
 
   return snapshot.sessions.flatMap((session) => {
@@ -227,6 +246,15 @@ export function buildParticipantViewModels(
           .map((response) => response.question.id),
         coverage: expectedCount ? resolved.length / expectedCount : 0,
         responses: responseModels,
+        canonicalResponses: responseModels.filter((response) =>
+          canonicalQuestionIds.has(response.question.id)
+        ),
+        supplementaryResponses: responseModels.filter(
+          (response) =>
+            !canonicalQuestionIds.has(response.question.id) &&
+            (response.state === "ANSWERED" ||
+              response.state === "NOT_APPLICABLE")
+        ),
         consent: consentsBySession.get(session.id) ?? null,
       },
     ];

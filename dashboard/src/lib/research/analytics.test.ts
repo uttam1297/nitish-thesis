@@ -8,6 +8,8 @@ function participant(
   overrides: Partial<ParticipantViewModel> = {}
 ): ParticipantViewModel {
   return {
+    canonicalResponses: [],
+    supplementaryResponses: [],
     participantCode: "P002",
     roles: ["product"],
     industry: "Retail / E-commerce",

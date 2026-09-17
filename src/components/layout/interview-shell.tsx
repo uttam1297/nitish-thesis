@@ -16,6 +16,9 @@ const SYNC_STATUS_LABEL: Record<SyncStatus, string | null> = {
 
 interface InterviewShellProps {
   showUniversityLogo?: boolean;
+  /** Questionnaire the session is pinned to, shown so a participant (or the
+   * researcher looking over their shoulder) can say which set they answered. */
+  questionnaireVersion?: string;
   progress?: ReactNode;
   syncStatus?: SyncStatus;
   resumeLink?: string | null;
@@ -26,6 +29,7 @@ interface InterviewShellProps {
 
 export function InterviewShell({
   showUniversityLogo = false,
+  questionnaireVersion,
   progress,
   syncStatus,
   resumeLink,
@@ -105,7 +109,16 @@ export function InterviewShell({
       </main>
 
       <footer className="relative z-10 mx-auto w-full max-w-(--width-interview) px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-xs text-muted-foreground sm:px-6 sm:pb-7">
-        Your answers are saved in this browser so you can stop and return.
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span>
+            Your answers are saved in this browser so you can stop and return.
+          </span>
+          {questionnaireVersion && (
+            <span className="text-muted-foreground/70">
+              Questionnaire {questionnaireVersion}
+            </span>
+          )}
+        </span>
         {resumeLink && <ResumeLinkNote resumeLink={resumeLink} />}
       </footer>
     </div>
